@@ -92,6 +92,7 @@ from .common_parser import (
     bool_text,
     child,
     children,
+    elem_text,
     parse_assertions,
     parse_children,
     parse_choices,
@@ -166,7 +167,7 @@ def _parse_port_map(elem: etree._Element) -> PortMap:
         physical_port=text(physical_port_elem, "name") if physical_port_elem is not None else None,
         logical_tie_off=text(elem, "logicalTieOff"),
         invert=attr_bool(elem, "invert", False),
-        is_informative=bool_text(elem, "isInformative", False) or False,
+        is_informative=bool_text(elem, "isInformative", False),
     )
 
 
@@ -225,7 +226,7 @@ def _parse_mirrored_target_interface(elem: etree._Element) -> MirroredTargetInte
         remap_address_elem = child(remap_addresses_elem, "remapAddress")
         remap_addresses.append(
             RemapAddress(
-                value=remap_address_elem.text or "" if remap_address_elem is not None else "",
+                value=elem_text(remap_address_elem) or "",
                 mode_refs=parse_mode_refs(remap_addresses_elem),
             )
         )
@@ -256,7 +257,10 @@ def _parse_bus_interface(elem: etree._Element) -> BusInterface:
         mirrored_system = SystemInterface(group=text(mode_elem, "group") or "")
     elif (mode_elem := child(elem, "monitor")) is not None:
         mode = InterfaceMode.MONITOR
-        monitor = MonitorInterface(interface_mode=InterfaceMode(mode_elem.get("interfaceMode")), group=text(mode_elem, "group"))
+        monitor = MonitorInterface(
+            interface_mode=InterfaceMode((mode_elem.get("interfaceMode") or "").strip()),
+            group=text(mode_elem, "group"),
+        )
     else:
         raise ValueError("busInterface element has no recognized interfaceMode child")
 
@@ -271,7 +275,7 @@ def _parse_bus_interface(elem: etree._Element) -> BusInterface:
         mirrored_target=mirrored_target,
         mirrored_system=mirrored_system,
         monitor=monitor,
-        connection_required=bool_text(elem, "connectionRequired", False) or False,
+        connection_required=bool_text(elem, "connectionRequired", False),
         bits_in_lau=text(elem, "bitsInLau"),
         bit_steering=text(elem, "bitSteering"),
         endianness=text(elem, "endianness"),
@@ -321,7 +325,7 @@ def _parse_indirect_interface(elem: etree._Element) -> IndirectInterface:
         name=text(elem, "name") or "",
         indirect_address_ref=_parse_field_reference(child(elem, "indirectAddressRef")),
         indirect_data_ref=_parse_field_reference(child(elem, "indirectDataRef")),
-        memory_map_ref=memory_map_ref_elem.text if memory_map_ref_elem is not None else None,
+        memory_map_ref=elem_text(memory_map_ref_elem),
         transparent_bridges=[
             TransparentBridge(initiator_ref=b.get("initiatorRef", "")) for b in children(elem, "transparentBridge")
         ],
@@ -389,9 +393,9 @@ def _parse_mode(elem: etree._Element) -> Mode:
 def _parse_memory_array(elem: Optional[etree._Element]) -> Optional[MemoryArray]:
     if elem is None:
         return None
-    dims = [ArrayDim(size=d.text or "", index_var=d.get("indexVar")) for d in children(elem, "dim")]
+    dims = [ArrayDim(size=elem_text(d) or "", index_var=d.get("indexVar")) for d in children(elem, "dim")]
     stride_elem = child(elem, "stride") or child(elem, "bitStride")
-    return MemoryArray(dims=dims, stride=stride_elem.text if stride_elem is not None else None)
+    return MemoryArray(dims=dims, stride=elem_text(stride_elem))
 
 
 def _parse_access_policy(elem: etree._Element) -> AccessPolicy:
@@ -452,27 +456,21 @@ def _parse_field_access_policy(elem: etree._Element) -> FieldAccessPolicy:
             if field_ref_elem is not None:
                 broadcast_to.append(field_ref_elem.get("fieldRef", ""))
 
+    modified_write_value = elem_text(modified_write_value_elem)
+    read_action = elem_text(read_action_elem)
+    test_constraint = (testable_elem.get("testConstraint") or "").strip() if testable_elem is not None else ""
+
     return FieldAccessPolicy(
         mode_refs=parse_mode_refs(elem),
         access=AccessType(access) if access else None,
-        modified_write_value=(
-            ModifiedWriteValue(modified_write_value_elem.text)
-            if modified_write_value_elem is not None and modified_write_value_elem.text
-            else None
-        ),
+        modified_write_value=ModifiedWriteValue(modified_write_value) if modified_write_value else None,
         write_value_constraint=_parse_write_value_constraint(elem),
-        read_action=(
-            ReadAction(read_action_elem.text) if read_action_elem is not None and read_action_elem.text else None
-        ),
+        read_action=ReadAction(read_action) if read_action else None,
         read_response=text(elem, "readResponse"),
         broadcast_to=broadcast_to,
         access_restrictions=parse_children(elem, "accessRestrictions", "accessRestriction", _parse_access_restriction),
         testable=as_bool(testable_elem.text) if testable_elem is not None else None,
-        test_constraint=(
-            TestConstraint(testable_elem.get("testConstraint"))
-            if testable_elem is not None and testable_elem.get("testConstraint")
-            else None
-        ),
+        test_constraint=TestConstraint(test_constraint) if test_constraint else None,
         reserved=text(elem, "reserved"),
     )
 
@@ -602,7 +600,7 @@ def _parse_bank(elem: etree._Element) -> Bank:
     usage = text(elem, "usage")
     return Bank(
         name=text(elem, "name") or "",
-        bank_alignment=BankAlignment(elem.get("bankAlignment")),
+        bank_alignment=BankAlignment((elem.get("bankAlignment") or "").strip()),
         items=_parse_memory_map_items(elem),
         usage=UsageType(usage) if usage else None,
         volatile=bool_text(elem, "volatile"),
@@ -684,10 +682,10 @@ def _parse_clock_driver(elem: etree._Element) -> ClockDriver:
     offset_elem = child(elem, "clockPulseOffset")
     duration_elem = child(elem, "clockPulseDuration")
     return ClockDriver(
-        clock_period=period_elem.text or "" if period_elem is not None else "",
-        clock_pulse_offset=offset_elem.text or "" if offset_elem is not None else "",
+        clock_period=elem_text(period_elem) or "",
+        clock_pulse_offset=elem_text(offset_elem) or "",
         clock_pulse_value=text(elem, "clockPulseValue") or "",
-        clock_pulse_duration=duration_elem.text or "" if duration_elem is not None else "",
+        clock_pulse_duration=elem_text(duration_elem) or "",
         clock_name=elem.get("clockName"),
         period_units=period_elem.get("units", "ns") if period_elem is not None else "ns",
         offset_units=offset_elem.get("units", "ns") if offset_elem is not None else "ns",
@@ -699,9 +697,9 @@ def _parse_single_shot_driver(elem: etree._Element) -> SingleShotDriver:
     offset_elem = child(elem, "singleShotOffset")
     duration_elem = child(elem, "singleShotDuration")
     return SingleShotDriver(
-        single_shot_offset=offset_elem.text or "" if offset_elem is not None else "",
+        single_shot_offset=elem_text(offset_elem) or "",
         single_shot_value=text(elem, "singleShotValue") or "",
-        single_shot_duration=duration_elem.text or "" if duration_elem is not None else "",
+        single_shot_duration=elem_text(duration_elem) or "",
         offset_units=offset_elem.get("units", "ns") if offset_elem is not None else "ns",
         duration_units=duration_elem.get("units", "ns") if duration_elem is not None else "ns",
     )
@@ -735,9 +733,9 @@ def _parse_constraint_set(elem: etree._Element) -> ConstraintSet:
 
 
 def _parse_wire_port(elem: etree._Element) -> WirePort:
-    direction_elem = child(elem, "direction")
+    direction = elem_text(child(elem, "direction"))
     return WirePort(
-        direction=Direction(direction_elem.text) if direction_elem is not None else Direction.IN,
+        direction=Direction(direction) if direction else Direction.IN,
         qualifier=parse_qualifier(elem),
         vectors=parse_vectors(elem),
         drivers=parse_children(elem, "drivers", "driver", _parse_driver),
@@ -747,12 +745,12 @@ def _parse_wire_port(elem: etree._Element) -> WirePort:
 
 
 def _parse_transactional_port(elem: etree._Element) -> TransactionalPort:
-    initiative_elem = child(elem, "initiative")
+    initiative = elem_text(child(elem, "initiative"))
     kind_elem = child(elem, "kind")
     connection_elem = child(elem, "connection")
     return TransactionalPort(
-        initiative=Initiative(initiative_elem.text) if initiative_elem is not None else Initiative.REQUIRES,
-        kind=kind_elem.text if kind_elem is not None else None,
+        initiative=Initiative(initiative) if initiative else Initiative.REQUIRES,
+        kind=elem_text(kind_elem),
         bus_width=text(elem, "busWidth"),
         qualifier=parse_qualifier(elem),
         protocol=parse_protocol(elem),
@@ -864,7 +862,7 @@ def _parse_file_builder_override(elem: etree._Element) -> FileBuilderOverride:
 def _parse_component_instantiation(elem: etree._Element) -> ComponentInstantiation:
     return ComponentInstantiation(
         name=text(elem, "name") or "",
-        is_virtual=bool_text(elem, "isVirtual", False) or False,
+        is_virtual=bool_text(elem, "isVirtual", False),
         language=text(elem, "language"),
         library_name=text(elem, "libraryName"),
         package_name=text(elem, "packageName"),
@@ -966,7 +964,7 @@ def _parse_clearbox_element(elem: etree._Element) -> ClearboxElement:
     return ClearboxElement(
         name=text(elem, "name") or "",
         clearbox_type=text(elem, "clearboxType") or "",
-        driveable=bool_text(elem, "driveable", False) or False,
+        driveable=bool_text(elem, "driveable", False),
         parameters=parse_parameters(elem),
         vendor_extensions=parse_vendor_extensions(elem),
     )
@@ -980,7 +978,7 @@ def _parse_component_generator(elem: etree._Element) -> ComponentGenerator:
         generator_exe=text(elem, "generatorExe") or "",
         phase=text(elem, "phase"),
         parameters=parse_parameters(elem),
-        api_type=api_type_elem.text if api_type_elem is not None else None,
+        api_type=elem_text(api_type_elem),
         api_service=text(elem, "apiService") or "SOAP",
         transport_methods=(
             texts(transport_methods_container, "transportMethod") if transport_methods_container is not None else []

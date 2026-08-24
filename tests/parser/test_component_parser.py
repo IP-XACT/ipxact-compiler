@@ -10,6 +10,7 @@ from ipxact.schema.memorymap import AddressBlock
 from ipxact.schema.ports import Direction
 
 FIXTURE = Path(__file__).parent / "xml" / "apb_uart.xml"
+COMMENT_FIXTURE = Path(__file__).parent / "xml" / "apb_uart_with_comment.xml"
 
 
 def test_component_vlnv():
@@ -64,3 +65,47 @@ def test_parameters():
     assert baud_rate.name == "BAUD_RATE"
     assert baud_rate.value == "115200"
     assert baud_rate.parameter_id == "BAUD_RATE"
+
+
+def test_comments_do_not_disturb_vlnv_and_description():
+    """Comments appear inside vendor/version (before and after the value text) and as the
+    sole content of description (no real value at all). A comment placed before an
+    element's value text used to make lxml's .text capture only the comment, silently
+    pushing the real value onto the comment's .tail and losing it; parse_file must strip
+    comments during parsing so this never surfaces downstream.
+    """
+    component = parse_file(COMMENT_FIXTURE)
+    assert str(component.vlnv) == "example.org:ip:apb_uart:1.0"
+    assert component.description is None
+
+
+def test_comments_do_not_disturb_bus_interface_or_port_map():
+    """Covers a comment before an attribute-only element, and two comments in a row
+    before a value (proving comment removal isn't a one-comment-only fix).
+    """
+    component = parse_file(COMMENT_FIXTURE)
+    apb = component.bus_interfaces[0]
+    assert apb.name == "apb"
+    assert str(apb.bus_type) == "amba.com:AMBA4:APB4:r0p0_0"
+    port_map = apb.abstraction_types[0].port_maps[0]
+    assert port_map.logical_port == "PCLK"
+    assert port_map.physical_port == "clk"
+
+
+def test_comments_do_not_disturb_memory_map():
+    """Covers comments nested three levels deep (addressBlock -> register -> field)."""
+    component = parse_file(COMMENT_FIXTURE)
+    block = component.memory_maps[0].items[0]
+    assert block.base_address == "0x0"
+    field = block.registers[0].fields[0]
+    assert field.bit_width == "1"
+
+
+def test_comments_do_not_disturb_ports_or_parameters():
+    """Covers comments between sibling elements (between the three <port> entries) and a
+    comment before a value inside a parameter.
+    """
+    component = parse_file(COMMENT_FIXTURE)
+    ports_by_name = {p.name: p.wire.direction for p in component.model.ports}
+    assert ports_by_name == {"clk": Direction.IN, "rst_n": Direction.IN, "wdata": Direction.OUT}
+    assert component.parameters[0].value == "115200"

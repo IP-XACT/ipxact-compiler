@@ -5,6 +5,9 @@ abstractiondefinition_parser end to end.
 
 from pathlib import Path
 
+from lxml import etree
+
+from ipxact.parser.abstractiondefinition_parser import _parse_wire_mode_constraints
 from ipxact.parser.main_parser import parse_file
 from ipxact.schema.abstractiondefinition import Presence
 
@@ -34,3 +37,16 @@ def test_data_port_is_optional_with_width():
     assert pwdata.wire.on_initiator.presence is Presence.OPTIONAL
     assert pwdata.wire.on_initiator.width == "32"
     assert pwdata.wire.on_initiator.width_all_bits_required is True
+
+
+def test_pretty_printed_presence_does_not_crash():
+    """Regression test: a pretty-printed <presence> with indentation whitespace around its
+    text used to raise ValueError from Presence(raw_text) instead of matching the enum.
+    """
+    ns = "http://www.accellera.org/XMLSchema/IPXACT/1685-2022"
+    elem = etree.fromstring(
+        f'<ipxact:onInitiator xmlns:ipxact="{ns}">\n'
+        "  <ipxact:presence>\n    required\n  </ipxact:presence>\n"
+        "</ipxact:onInitiator>"
+    )
+    assert _parse_wire_mode_constraints(elem).presence is Presence.REQUIRED

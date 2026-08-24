@@ -23,8 +23,8 @@ def parse_busdefinition(root: etree._Element) -> BusDefinition:
     system_group_names_container = child(root, "systemGroupNames")
     return BusDefinition(
         vlnv=parse_vlnv(root),
-        direct_connection=bool_text(root, "directConnection", False) or False,
-        is_addressable=bool_text(root, "isAddressable", False) or False,
+        direct_connection=bool_text(root, "directConnection", False),
+        is_addressable=bool_text(root, "isAddressable", False),
         broadcast=bool_text(root, "broadcast"),
         extends=parse_vlnv_ref(extends_elem) if extends_elem is not None else None,
         max_initiators=text(root, "maxInitiators"),

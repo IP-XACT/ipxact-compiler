@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Regression fixture: comments scattered everywhere a comment could plausibly appear in
+     a hand-written or hand-edited IP-XACT file, to prove remove_comments=True in
+     main_parser.py makes the whole component_parser comment-immune end to end, not just
+     the one wire/direction case that first surfaced the bug. -->
+<ipxact:component xmlns:ipxact="http://www.accellera.org/XMLSchema/IPXACT/1685-2022">
+  <!-- vendor/library/name/version identity -->
+  <ipxact:vendor><!-- who owns this IP -->example.org</ipxact:vendor>
+  <ipxact:library>ip</ipxact:library>
+  <!-- the IP's name -->
+  <ipxact:name>apb_uart</ipxact:name>
+  <ipxact:version>1.0<!-- semver-ish --></ipxact:version>
+  <!-- comment-only content: no real text was ever written here, so this must parse as
+       "no description", not crash and not pick up any comment text as if it were one -->
+  <ipxact:description><!-- TODO: write a real description --></ipxact:description>
+
+  <!-- bus interfaces -->
+  <ipxact:busInterfaces>
+    <!-- the single APB target interface -->
+    <ipxact:busInterface>
+      <ipxact:name><!-- interface name -->apb</ipxact:name>
+      <ipxact:busType vendor="amba.com" library="AMBA4" name="APB4" version="r0p0_0"/>
+      <ipxact:abstractionTypes>
+        <!-- only one abstraction level for now -->
+        <ipxact:abstractionType>
+          <ipxact:abstractionRef vendor="amba.com" library="AMBA4" name="APB4_rtl" version="r0p0_0"/>
+          <ipxact:portMaps>
+            <!-- clock port map -->
+            <ipxact:portMap>
+              <ipxact:logicalPort>
+                <ipxact:name>PCLK</ipxact:name>
+              </ipxact:logicalPort>
+              <ipxact:physicalPort>
+                <!-- two comments in a row before the physical pin name, on purpose -->
+                <!-- see the clk port declared under ipxact:model below -->
+                <ipxact:name>clk</ipxact:name>
+              </ipxact:physicalPort>
+            </ipxact:portMap>
+            <!-- end of port maps -->
+          </ipxact:portMaps>
+        </ipxact:abstractionType>
+      </ipxact:abstractionTypes>
+      <ipxact:target>
+        <!-- points at the register map below -->
+        <ipxact:memoryMapRef memoryMapRef="apb_uart_mm"/>
+      </ipxact:target>
+    </ipxact:busInterface>
+    <!-- no more bus interfaces -->
+  </ipxact:busInterfaces>
+
+  <!-- memory map -->
+  <ipxact:memoryMaps>
+    <ipxact:memoryMap>
+      <ipxact:name>apb_uart_mm</ipxact:name>
+      <!-- single contiguous register block -->
+      <ipxact:addressBlock>
+        <ipxact:name>regs</ipxact:name>
+        <ipxact:baseAddress><!-- offset from the peripheral base -->0x0</ipxact:baseAddress>
+        <ipxact:range>0x100</ipxact:range>
+        <ipxact:width>32</ipxact:width>
+        <!-- control register -->
+        <ipxact:register>
+          <ipxact:name>CTRL</ipxact:name>
+          <ipxact:addressOffset>0x0</ipxact:addressOffset>
+          <ipxact:size>32</ipxact:size>
+          <ipxact:field>
+            <!-- enable bit -->
+            <ipxact:name>ENABLE</ipxact:name>
+            <ipxact:bitOffset>0</ipxact:bitOffset>
+            <ipxact:bitWidth><!-- single bit -->1</ipxact:bitWidth>
+          </ipxact:field>
+        </ipxact:register>
+        <!-- end of registers -->
+      </ipxact:addressBlock>
+    </ipxact:memoryMap>
+  </ipxact:memoryMaps>
+
+  <!-- model: ports -->
+  <ipxact:model>
+    <ipxact:ports>
+      <!-- clock and reset -->
+      <ipxact:port>
+        <ipxact:name>clk</ipxact:name>
+        <ipxact:wire>
+          <ipxact:direction><!-- driven by the top-level clock tree -->in</ipxact:direction>
+        </ipxact:wire>
+      </ipxact:port>
+      <ipxact:port>
+        <ipxact:name>rst_n</ipxact:name>
+        <ipxact:wire>
+          <!-- active low -->
+          <ipxact:direction>in</ipxact:direction>
+        </ipxact:wire>
+      </ipxact:port>
+      <!-- data output, driven by the peripheral -->
+      <ipxact:port>
+        <ipxact:name>wdata</ipxact:name>
+        <ipxact:wire>
+          <ipxact:direction><!-- driven by the peripheral, not the bus -->out</ipxact:direction>
+        </ipxact:wire>
+      </ipxact:port>
+    </ipxact:ports>
+  </ipxact:model>
+
+  <!-- baud rate default -->
+  <ipxact:parameters>
+    <ipxact:parameter parameterId="BAUD_RATE">
+      <ipxact:name>BAUD_RATE</ipxact:name>
+      <ipxact:value><!-- bits per second -->115200</ipxact:value>
+    </ipxact:parameter>
+  </ipxact:parameters>
+  <!-- end of component -->
+</ipxact:component>
+<!-- a trailing comment after the root element closes is also legal XML -->

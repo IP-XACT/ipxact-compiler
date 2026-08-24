@@ -7,7 +7,6 @@ from lxml import etree
 
 from .abstractiondefinition_parser import parse_abstractiondefinition
 from .busdefinition_parser import parse_busdefinition
-from .common_parser import NAMESPACE as IPXACT_NAMESPACE  # noqa: F401
 from .common_parser import qn
 from .component_parser import parse_component
 from .design_parser import parse_design
@@ -22,9 +21,17 @@ _ROOT_TAG_PARSERS = {
 }
 
 
+_XML_PARSER = etree.XMLParser(remove_comments=True)
+
+
 def parse_file(path: Union[str, Path]):
-    """Parse an IP-XACT XML file, dispatching on its root element to the matching parser."""
-    root = etree.parse(str(path)).getroot()
+    """Parse an IP-XACT XML file, dispatching on its root element to the matching parser.
+
+    Comments are stripped during parsing.. If left in place, it pushes a following value onto
+    the comment's ``.tail`` instead of the parent's ``.text``,
+    so field's default value with no error, which is a problem.
+    """
+    root = etree.parse(str(path), parser=_XML_PARSER).getroot()
     return parse_element(root)
 
 

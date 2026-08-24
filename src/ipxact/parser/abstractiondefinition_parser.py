@@ -21,6 +21,7 @@ from .common_parser import (
     bool_text,
     child,
     children,
+    elem_text,
     parse_assertions,
     parse_children,
     parse_choices,
@@ -64,7 +65,7 @@ def _parse_port_constraints(elem: etree._Element) -> PortConstraints:
 
 
 def _parse_requires_driver(elem: etree._Element) -> RequiresDriver:
-    return RequiresDriver(value=as_bool(elem.text, False) or False, driver_type=elem.get("driverType", "any"))
+    return RequiresDriver(value=as_bool(elem.text, False), driver_type=elem.get("driverType", "any"))
 
 
 def _parse_wire_mode_constraints(elem: etree._Element) -> WireModeConstraints:
@@ -75,9 +76,9 @@ def _parse_wire_mode_constraints(elem: etree._Element) -> WireModeConstraints:
     mirrored_mode_constraints_elem = child(elem, "mirroredModeConstraints")
     return WireModeConstraints(
         presence=Presence(presence) if presence else Presence.OPTIONAL,
-        width=width_elem.text if width_elem is not None else None,
+        width=elem_text(width_elem),
         width_all_bits_required=attr_bool(width_elem, "allBits", False) if width_elem is not None else False,
-        direction=direction_elem.text if direction_elem is not None else None,
+        direction=elem_text(direction_elem),
         mode_constraints=(
             _parse_port_constraints(mode_constraints_elem) if mode_constraints_elem is not None else None
         ),
@@ -113,8 +114,8 @@ def _parse_transactional_mode_constraints(elem: etree._Element) -> Transactional
     kind_elem = child(elem, "kind")
     return TransactionalModeConstraints(
         presence=Presence(presence) if presence else Presence.OPTIONAL,
-        initiative=initiative_elem.text if initiative_elem is not None else None,
-        kind=kind_elem.text if kind_elem is not None else None,
+        initiative=elem_text(initiative_elem),
+        kind=elem_text(kind_elem),
         bus_width=text(elem, "busWidth"),
         protocol=parse_protocol(elem),
     )
@@ -148,7 +149,7 @@ def _parse_abstraction_port(elem: etree._Element) -> AbstractionPort:
         transactional=(
             _parse_transactional_abstraction_port(transactional_elem) if transactional_elem is not None else None
         ),
-        match=bool_text(elem, "match", False) or False,
+        match=bool_text(elem, "match", False),
         display_name=text(elem, "displayName"),
         short_description=text(elem, "shortDescription"),
         description=text(elem, "description"),

@@ -65,15 +65,27 @@ def parse_children(
     return [parse_fn(e) for e in children(container, item_tag)]
 
 
+def elem_text(elem: Optional[etree._Element]) -> Optional[str]:
+    """Strip an already-located element's text content, or None if absent/empty.
+
+    lxml returns element text verbatim, including any indentation whitespace a
+    pretty-printed or hand-edited file wraps around it (e.g. "\\n  required\\n").
+    Left unstripped, that whitespace flows into enum construction (Direction(...),
+    Presence(...), ...) and raises ValueError on otherwise-valid input.
+    """
+    if elem is None or elem.text is None:
+        return None
+    return elem.text.strip()
+
+
 def text(elem: Optional[etree._Element], tag: str) -> Optional[str]:
     if elem is None:
         return None
-    found = child(elem, tag)
-    return found.text if found is not None else None
+    return elem_text(child(elem, tag))
 
 
 def texts(elem: etree._Element, tag: str) -> list[str]:
-    return [e.text for e in children(elem, tag) if e.text is not None]
+    return [t for t in (elem_text(e) for e in children(elem, tag)) if t is not None]
 
 
 def as_bool(value: Optional[str], default: Optional[bool] = None) -> Optional[bool]:
@@ -108,7 +120,7 @@ def parse_configurable_element_values(elem: etree._Element) -> dict[str, str]:
         for value_elem in children(values_container, "configurableElementValue"):
             reference_id = value_elem.get("referenceId")
             if reference_id is not None:
-                config_values[reference_id] = value_elem.text or ""
+                config_values[reference_id] = elem_text(value_elem) or ""
     return config_values
 
 
@@ -147,7 +159,7 @@ def parse_array_bounds(elem: etree._Element) -> list[ArrayBound]:
 
 def parse_mode_ref(elem: etree._Element) -> ModeRef:
     priority = elem.get("priority")
-    return ModeRef(name=elem.text or "", priority=int(priority) if priority is not None else 0)
+    return ModeRef(name=elem_text(elem) or "", priority=int(priority) if priority is not None else 0)
 
 
 def parse_mode_refs(elem: etree._Element, tag: str = "modeRef") -> list[ModeRef]:
@@ -218,7 +230,7 @@ def parse_parameters(elem: etree._Element) -> list[Parameter]:
 
 
 def parse_choice_enumeration(elem: etree._Element) -> ChoiceEnumeration:
-    return ChoiceEnumeration(value=elem.text or "", text=elem.get("text"), help=elem.get("help"))
+    return ChoiceEnumeration(value=elem_text(elem) or "", text=elem.get("text"), help=elem.get("help"))
 
 
 def parse_choice(elem: etree._Element) -> Choice:
@@ -265,8 +277,8 @@ def parse_file(elem: etree._Element) -> File:
     build_command = child(elem, "buildCommand")
     return File(
         name=text(elem, "name") or "",
-        file_types=[t.text or "" for t in children(elem, "fileType")],
-        is_structural=bool_text(elem, "isStructural", False) or False,
+        file_types=[elem_text(t) or "" for t in children(elem, "fileType")],
+        is_structural=bool_text(elem, "isStructural", False),
         is_include_file=is_include is not None and as_bool(is_include.text, False) is True,
         include_has_external_declarations=is_include is not None
         and attr_bool(is_include, "externalDeclarations", False),
@@ -364,8 +376,8 @@ def parse_cell_specification(elem: Optional[etree._Element]) -> CellSpecificatio
     cell_function_elem = child(elem, "cellFunction")
     cell_class_elem = child(elem, "cellClass")
     return CellSpecification(
-        cell_function=cell_function_elem.text if cell_function_elem is not None else None,
-        cell_class=cell_class_elem.text if cell_class_elem is not None else None,
+        cell_function=elem_text(cell_function_elem),
+        cell_class=elem_text(cell_class_elem),
         cell_strength=elem.get("cellStrength"),
     )
 
@@ -390,7 +402,7 @@ def parse_load_constraint(elem: etree._Element) -> Optional[LoadConstraint]:
 def parse_timing_constraints(elem: etree._Element) -> list[TimingConstraint]:
     return [
         TimingConstraint(
-            value=t.text or "",
+            value=elem_text(t) or "",
             clock_name=t.get("clockName", ""),
             clock_edge=t.get("clockEdge"),
             delay_type=t.get("delayType"),
@@ -406,7 +418,7 @@ def parse_payload(elem: Optional[etree._Element]) -> Optional[Payload]:
     return Payload(
         type=text(elem, "type") or "",
         name=text(elem, "name"),
-        extension=extension_elem.text if extension_elem is not None else None,
+        extension=elem_text(extension_elem),
         extension_mandatory=attr_bool(extension_elem, "mandatory", False) if extension_elem is not None else False,
     )
 
@@ -417,7 +429,7 @@ def parse_protocol(elem: etree._Element) -> Optional[Protocol]:
         return None
     protocol_type_elem = child(container, "protocolType")
     return Protocol(
-        protocol_type=protocol_type_elem.text or "" if protocol_type_elem is not None else "",
+        protocol_type=elem_text(protocol_type_elem) or "",
         custom_type_name=protocol_type_elem.get("custom") if protocol_type_elem is not None else None,
         payload=parse_payload(child(container, "payload")),
     )
