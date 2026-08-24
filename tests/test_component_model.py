@@ -19,7 +19,7 @@ from ipxact import (
     Vector,
     WirePort,
 )
-from ipxact.businterface import AbstractionType
+from ipxact.schema.businterface import AbstractionType
 
 
 def build_apb_uart() -> Component:
