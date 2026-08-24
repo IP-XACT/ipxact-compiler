@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ipxact:design xmlns:ipxact="http://www.accellera.org/XMLSchema/IPXACT/1685-2022">
+  <ipxact:vendor>example.org</ipxact:vendor>
+  <ipxact:library>soc</ipxact:library>
+  <ipxact:name>top_design</ipxact:name>
+  <ipxact:version>1.0</ipxact:version>
+
+  <ipxact:componentInstances>
+    <ipxact:componentInstance>
+      <ipxact:instanceName>cpu</ipxact:instanceName>
+      <ipxact:componentRef vendor="example.org" library="ip" name="riscv_core" version="1.0"/>
+    </ipxact:componentInstance>
+    <ipxact:componentInstance>
+      <ipxact:instanceName>uart0</ipxact:instanceName>
+      <ipxact:componentRef vendor="example.org" library="ip" name="apb_uart" version="1.0"/>
+    </ipxact:componentInstance>
+    <ipxact:componentInstance>
+      <ipxact:instanceName>timer0</ipxact:instanceName>
+      <ipxact:componentRef vendor="example.org" library="ip" name="apb_timer" version="1.0"/>
+    </ipxact:componentInstance>
+    <ipxact:componentInstance>
+      <ipxact:instanceName>debug0</ipxact:instanceName>
+      <ipxact:componentRef vendor="example.org" library="ip" name="debug_module" version="1.0"/>
+    </ipxact:componentInstance>
+    <ipxact:componentInstance>
+      <ipxact:instanceName>apb_bus</ipxact:instanceName>
+      <ipxact:componentRef vendor="example.org" library="ip" name="apb_interconnect" version="2.0"/>
+    </ipxact:componentInstance>
+  </ipxact:componentInstances>
+
+  <ipxact:interconnections>
+    <ipxact:interconnection>
+      <ipxact:name>cpu_apb_conn</ipxact:name>
+      <ipxact:shortDescription>CPU to bus link</ipxact:shortDescription>
+      <ipxact:activeInterface componentInstanceRef="cpu" busRef="apb"/>
+      <ipxact:activeInterface componentInstanceRef="apb_bus" busRef="apb_t"/>
+    </ipxact:interconnection>
+    <ipxact:interconnection>
+      <ipxact:name>bus_uart0_conn</ipxact:name>
+      <ipxact:activeInterface componentInstanceRef="apb_bus" busRef="apb_m0"/>
+      <ipxact:activeInterface componentInstanceRef="uart0" busRef="apb"/>
+    </ipxact:interconnection>
+    <ipxact:interconnection>
+      <ipxact:name>bus_timer0_conn</ipxact:name>
+      <ipxact:activeInterface componentInstanceRef="apb_bus" busRef="apb_m1"/>
+      <ipxact:activeInterface componentInstanceRef="timer0" busRef="apb"/>
+    </ipxact:interconnection>
+  </ipxact:interconnections>
+
+  <ipxact:adHocConnections>
+    <ipxact:adHocConnection>
+      <ipxact:name>clk_net</ipxact:name>
+      <ipxact:shortDescription>Shared system clock</ipxact:shortDescription>
+      <ipxact:portReferences>
+        <ipxact:internalPortReference componentInstanceRef="cpu" portRef="clk"/>
+        <ipxact:internalPortReference componentInstanceRef="uart0" portRef="clk"/>
+        <ipxact:internalPortReference componentInstanceRef="timer0" portRef="clk"/>
+        <ipxact:internalPortReference componentInstanceRef="debug0" portRef="clk"/>
+        <ipxact:internalPortReference componentInstanceRef="apb_bus" portRef="clk"/>
+      </ipxact:portReferences>
+    </ipxact:adHocConnection>
+    <ipxact:adHocConnection>
+      <ipxact:name>debug_req_net</ipxact:name>
+      <ipxact:portReferences>
+        <ipxact:internalPortReference componentInstanceRef="debug0" portRef="debug_req_o"/>
+        <ipxact:internalPortReference componentInstanceRef="cpu" portRef="debug_req_i"/>
+      </ipxact:portReferences>
+    </ipxact:adHocConnection>
+    <ipxact:adHocConnection>
+      <ipxact:name>debug_resp_net</ipxact:name>
+      <ipxact:portReferences>
+        <ipxact:internalPortReference componentInstanceRef="cpu" portRef="debug_resp_o"/>
+        <ipxact:internalPortReference componentInstanceRef="debug0" portRef="debug_resp_i"/>
+      </ipxact:portReferences>
+    </ipxact:adHocConnection>
+  </ipxact:adHocConnections>
+</ipxact:design>

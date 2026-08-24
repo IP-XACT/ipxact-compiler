@@ -66,6 +66,7 @@ class AdHocConnection:
     external_port_references: list[ExternalPortReference] = field(default_factory=list)
     tied_value: Optional[Expression] = None  # numeric expression, or "open"/"default"
     display_name: Optional[str] = None
+    short_description: Optional[str] = None
     description: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
@@ -99,6 +100,7 @@ class Interconnection:
     other_active_interfaces: list[ActiveInterface] = field(default_factory=list)
     hier_interfaces: list[HierInterface] = field(default_factory=list)
     display_name: Optional[str] = None
+    short_description: Optional[str] = None
     description: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
@@ -122,6 +124,7 @@ class MonitorInterconnection:
     monitored_active_interface: MonitorInterfaceRef
     monitor_interfaces: list[MonitorInterfaceRef] = field(default_factory=list)
     display_name: Optional[str] = None
+    short_description: Optional[str] = None
     description: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
