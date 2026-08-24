@@ -19,6 +19,7 @@ from .common_parser import (
     child,
     children,
     parse_assertions,
+    parse_children,
     parse_choices,
     parse_parameters,
     parse_part_select,
@@ -34,9 +35,7 @@ from .common_parser import (
 
 def parse_design(root: etree._Element) -> Design:
     """Parse an ipxact:design root element into a Design object."""
-    component_instances_container = child(root, "componentInstances")
     interconnections_container = child(root, "interconnections")
-    ad_hoc_connections_container = child(root, "adHocConnections")
 
     interconnections: list[Interconnection] = []
     monitor_interconnections: list[MonitorInterconnection] = []
@@ -49,18 +48,10 @@ def parse_design(root: etree._Element) -> Design:
 
     return Design(
         vlnv=parse_vlnv(root),
-        component_instances=(
-            [_parse_component_instance(e) for e in children(component_instances_container, "componentInstance")]
-            if component_instances_container is not None
-            else []
-        ),
+        component_instances=parse_children(root, "componentInstances", "componentInstance", _parse_component_instance),
         interconnections=interconnections,
         monitor_interconnections=monitor_interconnections,
-        ad_hoc_connections=(
-            [_parse_ad_hoc_connection(e) for e in children(ad_hoc_connections_container, "adHocConnection")]
-            if ad_hoc_connections_container is not None
-            else []
-        ),
+        ad_hoc_connections=parse_children(root, "adHocConnections", "adHocConnection", _parse_ad_hoc_connection),
         choices=parse_choices(root),
         parameters=parse_parameters(root),
         assertions=parse_assertions(root),
@@ -79,15 +70,10 @@ def _parse_power_domain_link(elem: etree._Element) -> PowerDomainLink:
 
 
 def _parse_component_instance(elem: etree._Element) -> ComponentInstance:
-    power_domain_links_container = child(elem, "powerDomainLinks")
     return ComponentInstance(
         instance_name=text(elem, "instanceName") or "",
         component_ref=parse_vlnv_ref(child(elem, "componentRef")),
-        power_domain_links=(
-            [_parse_power_domain_link(e) for e in children(power_domain_links_container, "powerDomainLink")]
-            if power_domain_links_container is not None
-            else []
-        ),
+        power_domain_links=parse_children(elem, "powerDomainLinks", "powerDomainLink", _parse_power_domain_link),
         display_name=text(elem, "displayName"),
         short_description=text(elem, "shortDescription"),
         description=text(elem, "description"),
@@ -115,20 +101,14 @@ def _parse_external_port_reference(elem: etree._Element) -> ExternalPortReferenc
 
 
 def _parse_ad_hoc_connection(elem: etree._Element) -> AdHocConnection:
-    references_container = child(elem, "portReferences")
-    internal_refs: list[InternalPortReference] = []
-    external_refs: list[ExternalPortReference] = []
-    if references_container is not None:
-        internal_refs = [
-            _parse_internal_port_reference(e) for e in children(references_container, "internalPortReference")
-        ]
-        external_refs = [
-            _parse_external_port_reference(e) for e in children(references_container, "externalPortReference")
-        ]
     return AdHocConnection(
         name=text(elem, "name") or "",
-        internal_port_references=internal_refs,
-        external_port_references=external_refs,
+        internal_port_references=parse_children(
+            elem, "portReferences", "internalPortReference", _parse_internal_port_reference
+        ),
+        external_port_references=parse_children(
+            elem, "portReferences", "externalPortReference", _parse_external_port_reference
+        ),
         tied_value=text(elem, "tiedValue"),
         display_name=text(elem, "displayName"),
         short_description=text(elem, "shortDescription"),

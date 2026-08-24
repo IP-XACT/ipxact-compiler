@@ -103,6 +103,7 @@ from .common_parser import (
     child,
     children,
     parse_assertions,
+    parse_children,
     parse_choices,
     parse_file_sets,
     parse_mode_refs,
@@ -122,85 +123,33 @@ from .common_parser import (
 
 def parse_component(root: etree._Element) -> Component:
     """Parse an ipxact:component root element into a Component object."""
-    bus_interfaces_container = child(root, "busInterfaces")
-    indirect_interfaces_container = child(root, "indirectInterfaces")
-    channels_container = child(root, "channels")
-    modes_container = child(root, "modes")
-    address_spaces_container = child(root, "addressSpaces")
-    memory_maps_container = child(root, "memoryMaps")
     model_elem = child(root, "model")
-    component_generators_container = child(root, "componentGenerators")
-    clearbox_elements_container = child(root, "clearboxElements")
-    cpus_container = child(root, "cpus")
-    other_clock_drivers_container = child(root, "otherClockDrivers")
-    reset_types_container = child(root, "resetTypes")
-    power_domains_container = child(root, "powerDomains")
-    type_definitions_container = child(root, "typeDefinitions")
 
     return Component(
         vlnv=parse_vlnv(root),
-        bus_interfaces=(
-            [_parse_bus_interface(e) for e in children(bus_interfaces_container, "busInterface")]
-            if bus_interfaces_container is not None
-            else []
+        bus_interfaces=parse_children(root, "busInterfaces", "busInterface", _parse_bus_interface),
+        indirect_interfaces=parse_children(
+            root, "indirectInterfaces", "indirectInterface", _parse_indirect_interface
         ),
-        indirect_interfaces=(
-            [_parse_indirect_interface(e) for e in children(indirect_interfaces_container, "indirectInterface")]
-            if indirect_interfaces_container is not None
-            else []
-        ),
-        channels=(
-            [_parse_channel(e) for e in children(channels_container, "channel")]
-            if channels_container is not None
-            else []
-        ),
-        modes=[_parse_mode(e) for e in children(modes_container, "mode")] if modes_container is not None else [],
-        address_spaces=(
-            [_parse_address_space(e) for e in children(address_spaces_container, "addressSpace")]
-            if address_spaces_container is not None
-            else []
-        ),
-        memory_maps=(
-            [_parse_memory_map(e) for e in children(memory_maps_container, "memoryMap")]
-            if memory_maps_container is not None
-            else []
-        ),
+        channels=parse_children(root, "channels", "channel", _parse_channel),
+        modes=parse_children(root, "modes", "mode", _parse_mode),
+        address_spaces=parse_children(root, "addressSpaces", "addressSpace", _parse_address_space),
+        memory_maps=parse_children(root, "memoryMaps", "memoryMap", _parse_memory_map),
         model=_parse_model(model_elem) if model_elem is not None else None,
-        component_generators=(
-            [_parse_component_generator(e) for e in children(component_generators_container, "componentGenerator")]
-            if component_generators_container is not None
-            else []
+        component_generators=parse_children(
+            root, "componentGenerators", "componentGenerator", _parse_component_generator
         ),
         choices=parse_choices(root),
         file_sets=parse_file_sets(root),
-        clearbox_elements=(
-            [_parse_clearbox_element(e) for e in children(clearbox_elements_container, "clearboxElement")]
-            if clearbox_elements_container is not None
-            else []
+        clearbox_elements=parse_children(root, "clearboxElements", "clearboxElement", _parse_clearbox_element),
+        cpus=parse_children(root, "cpus", "cpu", _parse_cpu),
+        other_clock_drivers=parse_children(
+            root, "otherClockDrivers", "otherClockDriver", _parse_other_clock_driver
         ),
-        cpus=[_parse_cpu(e) for e in children(cpus_container, "cpu")] if cpus_container is not None else [],
-        other_clock_drivers=(
-            [_parse_other_clock_driver(e) for e in children(other_clock_drivers_container, "otherClockDriver")]
-            if other_clock_drivers_container is not None
-            else []
-        ),
-        reset_types=(
-            [_parse_reset_type(e) for e in children(reset_types_container, "resetType")]
-            if reset_types_container is not None
-            else []
-        ),
-        power_domains=(
-            [_parse_power_domain(e) for e in children(power_domains_container, "powerDomain")]
-            if power_domains_container is not None
-            else []
-        ),
-        external_type_definitions=(
-            [
-                _parse_external_type_definitions_ref(e)
-                for e in children(type_definitions_container, "externalTypeDefinitions")
-            ]
-            if type_definitions_container is not None
-            else []
+        reset_types=parse_children(root, "resetTypes", "resetType", _parse_reset_type),
+        power_domains=parse_children(root, "powerDomains", "powerDomain", _parse_power_domain),
+        external_type_definitions=parse_children(
+            root, "typeDefinitions", "externalTypeDefinitions", _parse_external_type_definitions_ref
         ),
         parameters=parse_parameters(root),
         assertions=parse_assertions(root),
@@ -227,14 +176,9 @@ def _parse_port_map(elem: etree._Element) -> PortMap:
 
 
 def _parse_abstraction_type(elem: etree._Element) -> AbstractionType:
-    port_maps_container = child(elem, "portMaps")
     return AbstractionType(
         abstraction_ref=parse_vlnv_ref(child(elem, "abstractionRef")),
-        port_maps=(
-            [_parse_port_map(pm) for pm in children(port_maps_container, "portMap")]
-            if port_maps_container is not None
-            else []
-        ),
+        port_maps=parse_children(elem, "portMaps", "portMap", _parse_port_map),
         view_refs=texts(elem, "viewRef"),
     )
 
@@ -321,17 +265,11 @@ def _parse_bus_interface(elem: etree._Element) -> BusInterface:
     else:
         raise ValueError("busInterface element has no recognized interfaceMode child")
 
-    abstraction_types_container = child(elem, "abstractionTypes")
-
     return BusInterface(
         name=text(elem, "name") or "",
         bus_type=parse_vlnv_ref(child(elem, "busType")),
         mode=mode,
-        abstraction_types=(
-            [_parse_abstraction_type(a) for a in children(abstraction_types_container, "abstractionType")]
-            if abstraction_types_container is not None
-            else []
-        ),
+        abstraction_types=parse_children(elem, "abstractionTypes", "abstractionType", _parse_abstraction_type),
         initiator=initiator,
         target=target,
         system=system,
@@ -467,8 +405,7 @@ def _parse_access_policy(elem: etree._Element) -> AccessPolicy:
 
 
 def _parse_access_policies(elem: etree._Element) -> list[AccessPolicy]:
-    container = child(elem, "accessPolicies")
-    return [_parse_access_policy(a) for a in children(container, "accessPolicy")] if container is not None else []
+    return parse_children(elem, "accessPolicies", "accessPolicy", _parse_access_policy)
 
 
 def _parse_reset(elem: etree._Element) -> Reset:
@@ -512,7 +449,6 @@ def _parse_field_access_policy(elem: etree._Element) -> FieldAccessPolicy:
     modified_write_value_elem = child(elem, "modifiedWriteValue")
     read_action_elem = child(elem, "readAction")
     testable_elem = child(elem, "testable")
-    access_restrictions_container = child(elem, "accessRestrictions")
     broadcasts_container = child(elem, "broadcasts")
     broadcast_to = []
     if broadcasts_container is not None:
@@ -535,11 +471,7 @@ def _parse_field_access_policy(elem: etree._Element) -> FieldAccessPolicy:
         ),
         read_response=text(elem, "readResponse"),
         broadcast_to=broadcast_to,
-        access_restrictions=(
-            [_parse_access_restriction(a) for a in children(access_restrictions_container, "accessRestriction")]
-            if access_restrictions_container is not None
-            else []
-        ),
+        access_restrictions=parse_children(elem, "accessRestrictions", "accessRestriction", _parse_access_restriction),
         testable=as_bool(testable_elem.text) if testable_elem is not None else None,
         test_constraint=(
             TestConstraint(testable_elem.get("testConstraint"))
@@ -551,26 +483,17 @@ def _parse_field_access_policy(elem: etree._Element) -> FieldAccessPolicy:
 
 
 def _parse_field(elem: etree._Element) -> Field:
-    resets_container = child(elem, "resets")
-    enumerated_values_container = child(elem, "enumeratedValues")
-    field_access_policies_container = child(elem, "fieldAccessPolicies")
     return Field(
         name=text(elem, "name") or "",
         bit_offset=text(elem, "bitOffset") or "",
         bit_width=text(elem, "bitWidth") or "",
         array=_parse_memory_array(child(elem, "array")),
         volatile=bool_text(elem, "volatile"),
-        resets=[_parse_reset(r) for r in children(resets_container, "reset")] if resets_container is not None else [],
-        field_access_policies=(
-            [_parse_field_access_policy(f) for f in children(field_access_policies_container, "fieldAccessPolicy")]
-            if field_access_policies_container is not None
-            else []
+        resets=parse_children(elem, "resets", "reset", _parse_reset),
+        field_access_policies=parse_children(
+            elem, "fieldAccessPolicies", "fieldAccessPolicy", _parse_field_access_policy
         ),
-        enumerated_values=(
-            [_parse_enumerated_value(e) for e in children(enumerated_values_container, "enumeratedValue")]
-            if enumerated_values_container is not None
-            else []
-        ),
+        enumerated_values=parse_children(elem, "enumeratedValues", "enumeratedValue", _parse_enumerated_value),
         display_name=text(elem, "displayName"),
         description=text(elem, "description"),
         parameters=parse_parameters(elem),
@@ -603,7 +526,6 @@ def _parse_alternate_register(elem: etree._Element) -> AlternateRegister:
 
 
 def _parse_register(elem: etree._Element) -> Register:
-    alternate_registers_container = child(elem, "alternateRegisters")
     return Register(
         name=text(elem, "name") or "",
         address_offset=text(elem, "addressOffset") or "",
@@ -612,10 +534,8 @@ def _parse_register(elem: etree._Element) -> Register:
         volatile=bool_text(elem, "volatile"),
         access_policies=_parse_access_policies(elem),
         fields=[_parse_field(f) for f in children(elem, "field")],
-        alternate_registers=(
-            [_parse_alternate_register(a) for a in children(alternate_registers_container, "alternateRegister")]
-            if alternate_registers_container is not None
-            else []
+        alternate_registers=parse_children(
+            elem, "alternateRegisters", "alternateRegister", _parse_alternate_register
         ),
         display_name=text(elem, "displayName"),
         description=text(elem, "description"),
@@ -746,17 +666,12 @@ def _parse_segment(elem: etree._Element) -> Segment:
 
 
 def _parse_address_space(elem: etree._Element) -> AddressSpace:
-    segments_container = child(elem, "segments")
     local_memory_map_elem = child(elem, "localMemoryMap")
     return AddressSpace(
         name=text(elem, "name") or "",
         range=text(elem, "range") or "",
         width=text(elem, "width") or "",
-        segments=(
-            [_parse_segment(s) for s in children(segments_container, "segment")]
-            if segments_container is not None
-            else []
-        ),
+        segments=parse_children(elem, "segments", "segment", _parse_segment),
         address_unit_bits=text(elem, "addressUnitBits"),
         local_memory_map=_parse_local_memory_map(local_memory_map_elem) if local_memory_map_elem is not None else None,
         display_name=text(elem, "displayName"),
@@ -922,20 +837,12 @@ def _parse_constraint_set(elem: etree._Element) -> ConstraintSet:
 
 def _parse_wire_port(elem: etree._Element) -> WirePort:
     direction_elem = child(elem, "direction")
-    drivers_container = child(elem, "drivers")
-    constraint_sets_container = child(elem, "constraintSets")
     return WirePort(
         direction=Direction(direction_elem.text) if direction_elem is not None else Direction.IN,
         qualifier=_parse_qualifier(elem),
         vectors=parse_vectors(elem),
-        drivers=(
-            [_parse_driver(d) for d in children(drivers_container, "driver")] if drivers_container is not None else []
-        ),
-        constraint_sets=(
-            [_parse_constraint_set(c) for c in children(constraint_sets_container, "constraintSet")]
-            if constraint_sets_container is not None
-            else []
-        ),
+        drivers=parse_children(elem, "drivers", "driver", _parse_driver),
+        constraint_sets=parse_children(elem, "constraintSets", "constraintSet", _parse_constraint_set),
         all_logical_directions_allowed=attr_bool(elem, "allLogicalDirectionsAllowed", False),
     )
 
@@ -1003,7 +910,6 @@ def _parse_sub_port(elem: etree._Element) -> SubPort:
 def _parse_structured_port(elem: etree._Element) -> StructuredPort:
     struct_type = _struct_type_of(elem)
     struct_type_elem = child(elem, struct_type)
-    sub_ports_container = child(elem, "subPorts")
     direction = None
     phantom = None
     if struct_type_elem is not None:
@@ -1015,11 +921,7 @@ def _parse_structured_port(elem: etree._Element) -> StructuredPort:
     return StructuredPort(
         struct_type=struct_type,
         vectors=parse_vectors(elem),
-        sub_ports=(
-            [_parse_sub_port(s) for s in children(sub_ports_container, "subPort")]
-            if sub_ports_container is not None
-            else []
-        ),
+        sub_ports=parse_children(elem, "subPorts", "subPort", _parse_sub_port),
         packed=attr_bool(elem, "packed", True),
         direction=direction,
         phantom=phantom,
@@ -1039,17 +941,12 @@ def _parse_port(elem: etree._Element) -> Port:
     wire_elem = child(elem, "wire")
     transactional_elem = child(elem, "transactional")
     structured_elem = child(elem, "structured")
-    field_maps_container = child(elem, "fieldMaps")
     return Port(
         name=text(elem, "name") or "",
         wire=_parse_wire_port(wire_elem) if wire_elem is not None else None,
         transactional=_parse_transactional_port(transactional_elem) if transactional_elem is not None else None,
         structured=_parse_structured_port(structured_elem) if structured_elem is not None else None,
-        field_maps=(
-            [_parse_field_map(f) for f in children(field_maps_container, "fieldMap")]
-            if field_maps_container is not None
-            else []
-        ),
+        field_maps=parse_children(elem, "fieldMaps", "fieldMap", _parse_field_map),
         display_name=text(elem, "displayName"),
         description=text(elem, "description"),
         parameters=parse_parameters(elem),
@@ -1090,7 +987,6 @@ def _parse_file_builder_override(elem: etree._Element) -> FileBuilderOverride:
 
 
 def _parse_component_instantiation(elem: etree._Element) -> ComponentInstantiation:
-    module_parameters_container = child(elem, "moduleParameters")
     return ComponentInstantiation(
         name=text(elem, "name") or "",
         is_virtual=bool_text(elem, "isVirtual", False) or False,
@@ -1100,11 +996,7 @@ def _parse_component_instantiation(elem: etree._Element) -> ComponentInstantiati
         module_name=text(elem, "moduleName"),
         architecture_name=text(elem, "architectureName"),
         configuration_name=text(elem, "configurationName"),
-        module_parameters=(
-            [_parse_module_parameter(m) for m in children(module_parameters_container, "moduleParameter")]
-            if module_parameters_container is not None
-            else []
-        ),
+        module_parameters=parse_children(elem, "moduleParameters", "moduleParameter", _parse_module_parameter),
         default_file_builders=[_parse_file_builder_override(b) for b in children(elem, "defaultFileBuilder")],
         file_set_refs=_parse_file_set_refs(elem),
         constraint_set_refs=_parse_constraint_set_refs(elem),
@@ -1132,8 +1024,7 @@ def _parse_design_configuration_instantiation(elem: etree._Element) -> DesignCon
 
 
 def _parse_model(elem: etree._Element) -> Model:
-    views_container = child(elem, "views")
-    views = [_parse_view(v) for v in children(views_container, "view")] if views_container is not None else []
+    views = parse_children(elem, "views", "view", _parse_view)
 
     component_instantiations = []
     design_instantiations = []
@@ -1150,8 +1041,7 @@ def _parse_model(elem: etree._Element) -> Model:
                     _parse_design_configuration_instantiation(instantiation_elem)
                 )
 
-    ports_container = child(elem, "ports")
-    ports = [_parse_port(p) for p in children(ports_container, "port")] if ports_container is not None else []
+    ports = parse_children(elem, "ports", "port", _parse_port)
 
     return Model(
         views=views,
@@ -1175,17 +1065,12 @@ def _parse_cpu_region(elem: etree._Element) -> CpuRegion:
 
 
 def _parse_cpu(elem: etree._Element) -> Cpu:
-    regions_container = child(elem, "regions")
     return Cpu(
         name=text(elem, "name") or "",
         range=text(elem, "range") or "",
         width=text(elem, "width") or "",
         memory_map_ref=text(elem, "memoryMapRef") or "",
-        regions=(
-            [_parse_cpu_region(r) for r in children(regions_container, "region")]
-            if regions_container is not None
-            else []
-        ),
+        regions=parse_children(elem, "regions", "region", _parse_cpu_region),
         address_unit_bits=text(elem, "addressUnitBits"),
         parameters=parse_parameters(elem),
         vendor_extensions=parse_vendor_extensions(elem),

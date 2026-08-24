@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Callable, Optional, TypeVar
 
 from lxml import etree
 
@@ -34,6 +34,23 @@ def child(elem: etree._Element, tag: str) -> Optional[etree._Element]:
 
 def children(elem: etree._Element, tag: str) -> list[etree._Element]:
     return elem.findall(qn(tag))
+
+
+T = TypeVar("T")
+
+
+def parse_children(
+    elem: etree._Element, container_tag: str, item_tag: str, parse_fn: Callable[[etree._Element], T]
+) -> list[T]:
+    """Parse item_tag children of elem's optional container_tag container, or [] if absent.
+
+    Covers the common IP-XACT shape of an optional wrapper element (e.g. busInterfaces)
+    holding one or more repeated items (e.g. busInterface).
+    """
+    container = child(elem, container_tag)
+    if container is None:
+        return []
+    return [parse_fn(e) for e in children(container, item_tag)]
 
 
 def text(elem: Optional[etree._Element], tag: str) -> Optional[str]:
