@@ -9,7 +9,7 @@ from ipxact.schema.businterface import InterfaceMode
 from ipxact.schema.memorymap import AddressBlock
 from ipxact.schema.ports import Direction
 
-FIXTURE = Path(__file__).parent / "fixtures" / "apb_uart.xml"
+FIXTURE = Path(__file__).parent / "xml" / "apb_uart.xml"
 
 
 def test_component_vlnv():
