@@ -7,7 +7,7 @@ from lxml import etree
 
 from .abstractiondefinition_parser import parse_abstractiondefinition
 from .busdefinition_parser import parse_busdefinition
-from .common_parser import NAMESPACE as IPXACT_NAMESPACE
+from .common_parser import NAMESPACE as IPXACT_NAMESPACE  # noqa: F401
 from .common_parser import qn
 from .component_parser import parse_component
 from .design_parser import parse_design

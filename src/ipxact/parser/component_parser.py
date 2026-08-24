@@ -72,27 +72,17 @@ from ..schema.model import (
     View,
 )
 from ..schema.ports import (
-    CellSpecification,
     ClockDriver,
     ConstraintSet,
     Direction,
     Driver,
-    DriveConstraint,
     FieldMap,
-    FlowControlFlag,
     Initiative,
-    LevelFlag,
-    LoadConstraint,
-    Payload,
     Port,
-    Protocol,
-    Qualifier,
     SingleShotDriver,
     StructuredPort,
     SubPort,
-    TimingConstraint,
     TransactionalPort,
-    UserFlag,
     WirePort,
 )
 from ..schema.vlnv import VLNVRef
@@ -105,12 +95,17 @@ from .common_parser import (
     parse_assertions,
     parse_children,
     parse_choices,
+    parse_drive_constraint,
     parse_file_sets,
+    parse_load_constraint,
     parse_mode_refs,
     parse_parameter,
     parse_parameters,
     parse_part_select,
+    parse_protocol,
+    parse_qualifier,
     parse_sub_port_references,
+    parse_timing_constraints,
     parse_vectors,
     parse_vendor_extensions,
     parse_vlnv,
@@ -684,65 +679,6 @@ def _parse_address_space(elem: etree._Element) -> AddressSpace:
 # --- ports / model ---
 
 
-def _parse_qualifier(elem: etree._Element) -> Optional[Qualifier]:
-    container = child(elem, "qualifier")
-    if container is None:
-        return None
-    is_reset_elem = child(container, "isReset")
-    is_clock_en_elem = child(container, "isClockEn")
-    is_power_en_elem = child(container, "isPowerEn")
-    is_flow_control_elem = child(container, "isFlowControl")
-    is_user_elem = child(container, "isUser")
-    return Qualifier(
-        is_address=bool_text(container, "isAddress"),
-        is_data=bool_text(container, "isData"),
-        is_clock=bool_text(container, "isClock"),
-        is_reset=(
-            LevelFlag(value=as_bool(is_reset_elem.text) or False, level=is_reset_elem.get("level"))
-            if is_reset_elem is not None
-            else None
-        ),
-        is_valid=bool_text(container, "isValid"),
-        is_interrupt=bool_text(container, "isInterrupt"),
-        is_clock_en=(
-            LevelFlag(
-                value=as_bool(is_clock_en_elem.text) or False,
-                level=is_clock_en_elem.get("level"),
-                power_domain_ref=is_clock_en_elem.get("powerDomainRef"),
-            )
-            if is_clock_en_elem is not None
-            else None
-        ),
-        is_power_en=(
-            LevelFlag(
-                value=as_bool(is_power_en_elem.text) or False,
-                level=is_power_en_elem.get("level"),
-                power_domain_ref=is_power_en_elem.get("powerDomainRef"),
-            )
-            if is_power_en_elem is not None
-            else None
-        ),
-        is_opcode=bool_text(container, "isOpcode"),
-        is_protection=bool_text(container, "isProtection"),
-        is_flow_control=(
-            FlowControlFlag(
-                value=as_bool(is_flow_control_elem.text) or False,
-                flow_type=is_flow_control_elem.get("flowType"),
-                user=is_flow_control_elem.get("user"),
-            )
-            if is_flow_control_elem is not None
-            else None
-        ),
-        is_user=(
-            UserFlag(value=as_bool(is_user_elem.text) or False, user=is_user_elem.get("user"))
-            if is_user_elem is not None
-            else None
-        ),
-        is_request=bool_text(container, "isRequest"),
-        is_response=bool_text(container, "isResponse"),
-    )
-
-
 def _parse_clock_driver(elem: etree._Element) -> ClockDriver:
     period_elem = child(elem, "clockPeriod")
     offset_elem = child(elem, "clockPulseOffset")
@@ -785,52 +721,15 @@ def _parse_driver(elem: etree._Element) -> Driver:
     )
 
 
-def _parse_cell_specification(elem: Optional[etree._Element]) -> CellSpecification:
-    if elem is None:
-        return CellSpecification()
-    cell_function_elem = child(elem, "cellFunction")
-    cell_class_elem = child(elem, "cellClass")
-    return CellSpecification(
-        cell_function=cell_function_elem.text if cell_function_elem is not None else None,
-        cell_class=cell_class_elem.text if cell_class_elem is not None else None,
-        cell_strength=elem.get("cellStrength"),
-    )
-
-
-def _parse_drive_constraint(elem: etree._Element) -> Optional[DriveConstraint]:
-    container = child(elem, "driveConstraint")
-    if container is None:
-        return None
-    return DriveConstraint(cell=_parse_cell_specification(child(container, "cellSpecification")))
-
-
-def _parse_load_constraint(elem: etree._Element) -> Optional[LoadConstraint]:
-    container = child(elem, "loadConstraint")
-    if container is None:
-        return None
-    return LoadConstraint(
-        cell=_parse_cell_specification(child(container, "cellSpecification")),
-        count=text(container, "count") or "3",
-    )
-
-
 def _parse_constraint_set(elem: etree._Element) -> ConstraintSet:
     vector_elem = child(elem, "vector")
     return ConstraintSet(
         name=text(elem, "name"),
         vector_left=text(vector_elem, "left") if vector_elem is not None else None,
         vector_right=text(vector_elem, "right") if vector_elem is not None else None,
-        drive_constraint=_parse_drive_constraint(elem),
-        load_constraint=_parse_load_constraint(elem),
-        timing_constraints=[
-            TimingConstraint(
-                value=t.text or "",
-                clock_name=t.get("clockName", ""),
-                clock_edge=t.get("clockEdge"),
-                delay_type=t.get("delayType"),
-            )
-            for t in children(elem, "timingConstraint")
-        ],
+        drive_constraint=parse_drive_constraint(elem),
+        load_constraint=parse_load_constraint(elem),
+        timing_constraints=parse_timing_constraints(elem),
         constraint_set_id=elem.get("constraintSetId", "default"),
     )
 
@@ -839,35 +738,11 @@ def _parse_wire_port(elem: etree._Element) -> WirePort:
     direction_elem = child(elem, "direction")
     return WirePort(
         direction=Direction(direction_elem.text) if direction_elem is not None else Direction.IN,
-        qualifier=_parse_qualifier(elem),
+        qualifier=parse_qualifier(elem),
         vectors=parse_vectors(elem),
         drivers=parse_children(elem, "drivers", "driver", _parse_driver),
         constraint_sets=parse_children(elem, "constraintSets", "constraintSet", _parse_constraint_set),
         all_logical_directions_allowed=attr_bool(elem, "allLogicalDirectionsAllowed", False),
-    )
-
-
-def _parse_payload(elem: Optional[etree._Element]) -> Optional[Payload]:
-    if elem is None:
-        return None
-    extension_elem = child(elem, "extension")
-    return Payload(
-        type=text(elem, "type") or "",
-        name=text(elem, "name"),
-        extension=extension_elem.text if extension_elem is not None else None,
-        extension_mandatory=attr_bool(extension_elem, "mandatory", False) if extension_elem is not None else False,
-    )
-
-
-def _parse_protocol(elem: etree._Element) -> Optional[Protocol]:
-    container = child(elem, "protocol")
-    if container is None:
-        return None
-    protocol_type_elem = child(container, "protocolType")
-    return Protocol(
-        protocol_type=protocol_type_elem.text or "" if protocol_type_elem is not None else "",
-        custom_type_name=protocol_type_elem.get("custom") if protocol_type_elem is not None else None,
-        payload=_parse_payload(child(container, "payload")),
     )
 
 
@@ -879,8 +754,8 @@ def _parse_transactional_port(elem: etree._Element) -> TransactionalPort:
         initiative=Initiative(initiative_elem.text) if initiative_elem is not None else Initiative.REQUIRES,
         kind=kind_elem.text if kind_elem is not None else None,
         bus_width=text(elem, "busWidth"),
-        qualifier=_parse_qualifier(elem),
-        protocol=_parse_protocol(elem),
+        qualifier=parse_qualifier(elem),
+        protocol=parse_protocol(elem),
         max_connections=text(connection_elem, "maxConnections") if connection_elem is not None else None,
         min_connections=text(connection_elem, "minConnections") if connection_elem is not None else None,
         all_logical_initiatives_allowed=attr_bool(elem, "allLogicalInitiativesAllowed", False),

@@ -18,6 +18,18 @@ from ..schema.common import (
     SubPortReference,
     Vector,
 )
+from ..schema.ports import (
+    CellSpecification,
+    DriveConstraint,
+    FlowControlFlag,
+    LevelFlag,
+    LoadConstraint,
+    Payload,
+    Protocol,
+    Qualifier,
+    TimingConstraint,
+    UserFlag,
+)
 from ..schema.vlnv import VLNV, VLNVRef
 
 NAMESPACE = "http://www.accellera.org/XMLSchema/IPXACT/1685-2022"
@@ -284,3 +296,128 @@ def parse_file_sets(elem: etree._Element) -> list[FileSet]:
     if container is None:
         return []
     return [parse_file_set(fs) for fs in children(container, "fileSet")]
+
+
+def parse_qualifier(elem: etree._Element) -> Optional[Qualifier]:
+    """ipxact:qualifier - shared by component ports and abstraction definition logical ports."""
+    container = child(elem, "qualifier")
+    if container is None:
+        return None
+    is_reset_elem = child(container, "isReset")
+    is_clock_en_elem = child(container, "isClockEn")
+    is_power_en_elem = child(container, "isPowerEn")
+    is_flow_control_elem = child(container, "isFlowControl")
+    is_user_elem = child(container, "isUser")
+    return Qualifier(
+        is_address=bool_text(container, "isAddress"),
+        is_data=bool_text(container, "isData"),
+        is_clock=bool_text(container, "isClock"),
+        is_reset=(
+            LevelFlag(value=as_bool(is_reset_elem.text) or False, level=is_reset_elem.get("level"))
+            if is_reset_elem is not None
+            else None
+        ),
+        is_valid=bool_text(container, "isValid"),
+        is_interrupt=bool_text(container, "isInterrupt"),
+        is_clock_en=(
+            LevelFlag(
+                value=as_bool(is_clock_en_elem.text) or False,
+                level=is_clock_en_elem.get("level"),
+                power_domain_ref=is_clock_en_elem.get("powerDomainRef"),
+            )
+            if is_clock_en_elem is not None
+            else None
+        ),
+        is_power_en=(
+            LevelFlag(
+                value=as_bool(is_power_en_elem.text) or False,
+                level=is_power_en_elem.get("level"),
+                power_domain_ref=is_power_en_elem.get("powerDomainRef"),
+            )
+            if is_power_en_elem is not None
+            else None
+        ),
+        is_opcode=bool_text(container, "isOpcode"),
+        is_protection=bool_text(container, "isProtection"),
+        is_flow_control=(
+            FlowControlFlag(
+                value=as_bool(is_flow_control_elem.text) or False,
+                flow_type=is_flow_control_elem.get("flowType"),
+                user=is_flow_control_elem.get("user"),
+            )
+            if is_flow_control_elem is not None
+            else None
+        ),
+        is_user=(
+            UserFlag(value=as_bool(is_user_elem.text) or False, user=is_user_elem.get("user"))
+            if is_user_elem is not None
+            else None
+        ),
+        is_request=bool_text(container, "isRequest"),
+        is_response=bool_text(container, "isResponse"),
+    )
+
+
+def parse_cell_specification(elem: Optional[etree._Element]) -> CellSpecification:
+    if elem is None:
+        return CellSpecification()
+    cell_function_elem = child(elem, "cellFunction")
+    cell_class_elem = child(elem, "cellClass")
+    return CellSpecification(
+        cell_function=cell_function_elem.text if cell_function_elem is not None else None,
+        cell_class=cell_class_elem.text if cell_class_elem is not None else None,
+        cell_strength=elem.get("cellStrength"),
+    )
+
+
+def parse_drive_constraint(elem: etree._Element) -> Optional[DriveConstraint]:
+    container = child(elem, "driveConstraint")
+    if container is None:
+        return None
+    return DriveConstraint(cell=parse_cell_specification(child(container, "cellSpecification")))
+
+
+def parse_load_constraint(elem: etree._Element) -> Optional[LoadConstraint]:
+    container = child(elem, "loadConstraint")
+    if container is None:
+        return None
+    return LoadConstraint(
+        cell=parse_cell_specification(child(container, "cellSpecification")),
+        count=text(container, "count") or "3",
+    )
+
+
+def parse_timing_constraints(elem: etree._Element) -> list[TimingConstraint]:
+    return [
+        TimingConstraint(
+            value=t.text or "",
+            clock_name=t.get("clockName", ""),
+            clock_edge=t.get("clockEdge"),
+            delay_type=t.get("delayType"),
+        )
+        for t in children(elem, "timingConstraint")
+    ]
+
+
+def parse_payload(elem: Optional[etree._Element]) -> Optional[Payload]:
+    if elem is None:
+        return None
+    extension_elem = child(elem, "extension")
+    return Payload(
+        type=text(elem, "type") or "",
+        name=text(elem, "name"),
+        extension=extension_elem.text if extension_elem is not None else None,
+        extension_mandatory=attr_bool(extension_elem, "mandatory", False) if extension_elem is not None else False,
+    )
+
+
+def parse_protocol(elem: etree._Element) -> Optional[Protocol]:
+    container = child(elem, "protocol")
+    if container is None:
+        return None
+    protocol_type_elem = child(container, "protocolType")
+    return Protocol(
+        protocol_type=protocol_type_elem.text or "" if protocol_type_elem is not None else "",
+        custom_type_name=protocol_type_elem.get("custom") if protocol_type_elem is not None else None,
+        payload=parse_payload(child(container, "payload")),
+    )

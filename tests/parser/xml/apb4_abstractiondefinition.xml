@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ipxact:abstractionDefinition xmlns:ipxact="http://www.accellera.org/XMLSchema/IPXACT/1685-2022">
+  <ipxact:vendor>amba.com</ipxact:vendor>
+  <ipxact:library>AMBA4</ipxact:library>
+  <ipxact:name>APB4_rtl</ipxact:name>
+  <ipxact:version>r0p0_0</ipxact:version>
+
+  <ipxact:busType vendor="amba.com" library="AMBA4" name="APB4" version="r0p0_0"/>
+
+  <ipxact:ports>
+    <ipxact:port>
+      <ipxact:logicalName>PCLK</ipxact:logicalName>
+      <ipxact:wire>
+        <ipxact:qualifier>
+          <ipxact:isClock>true</ipxact:isClock>
+        </ipxact:qualifier>
+        <ipxact:onInitiator>
+          <ipxact:presence>required</ipxact:presence>
+          <ipxact:direction>out</ipxact:direction>
+        </ipxact:onInitiator>
+        <ipxact:onTarget>
+          <ipxact:presence>required</ipxact:presence>
+          <ipxact:direction>in</ipxact:direction>
+        </ipxact:onTarget>
+      </ipxact:wire>
+    </ipxact:port>
+    <ipxact:port>
+      <ipxact:logicalName>PWDATA</ipxact:logicalName>
+      <ipxact:wire>
+        <ipxact:qualifier>
+          <ipxact:isData>true</ipxact:isData>
+        </ipxact:qualifier>
+        <ipxact:onInitiator>
+          <ipxact:presence>optional</ipxact:presence>
+          <ipxact:width allBits="true">32</ipxact:width>
+          <ipxact:direction>out</ipxact:direction>
+        </ipxact:onInitiator>
+        <ipxact:onTarget>
+          <ipxact:presence>optional</ipxact:presence>
+          <ipxact:width allBits="true">32</ipxact:width>
+          <ipxact:direction>in</ipxact:direction>
+        </ipxact:onTarget>
+      </ipxact:wire>
+    </ipxact:port>
+  </ipxact:ports>
+</ipxact:abstractionDefinition>
