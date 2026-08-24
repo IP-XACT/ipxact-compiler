@@ -88,8 +88,8 @@ def parse_vlnv(elem: etree._Element) -> VLNV:
     )
 
 
-def parse_vlnv_ref(elem: etree._Element) -> VLNVRef:
-    """libraryRefType/configurableLibraryRefType - vendor/library/name/version as attributes."""
+def parse_configurable_element_values(elem: etree._Element) -> dict[str, str]:
+    """ipxact:configurableElementValues - a set of parameterId-keyed override expressions."""
     config_values: dict[str, str] = {}
     values_container = child(elem, "configurableElementValues")
     if values_container is not None:
@@ -97,12 +97,17 @@ def parse_vlnv_ref(elem: etree._Element) -> VLNVRef:
             reference_id = value_elem.get("referenceId")
             if reference_id is not None:
                 config_values[reference_id] = value_elem.text or ""
+    return config_values
+
+
+def parse_vlnv_ref(elem: etree._Element) -> VLNVRef:
+    """libraryRefType/configurableLibraryRefType - vendor/library/name/version as attributes."""
     return VLNVRef(
         vendor=elem.get("vendor", ""),
         library=elem.get("library", ""),
         name=elem.get("name", ""),
         version=elem.get("version", ""),
-        config_element_values=config_values,
+        config_element_values=parse_configurable_element_values(elem),
     )
 
 
