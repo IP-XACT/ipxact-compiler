@@ -234,7 +234,8 @@ class StructuredPort:
     vectors: list[Vector] = field(default_factory=list)
     sub_ports: list[SubPort] = field(default_factory=list)
     packed: bool = True
-    role: Optional[str] = None  # only meaningful when struct_type == "interface"
+    direction: Optional[Direction] = None  # only meaningful when struct_type is struct/union
+    phantom: Optional[bool] = None  # only meaningful when struct_type == "interface"
 
 
 @dataclass
