@@ -65,6 +65,16 @@ def parse_children(
     return [parse_fn(e) for e in children(container, item_tag)]
 
 
+def parse_texts(elem: etree._Element, container_tag: str, item_tag: str) -> list[str]:
+    """Text-list analogue of parse_children: item_tag text values inside elem's
+    optional container_tag container, or [] if absent.
+    """
+    container = child(elem, container_tag)
+    if container is None:
+        return []
+    return texts(container, item_tag)
+
+
 def elem_text(elem: Optional[etree._Element]) -> Optional[str]:
     """Strip an already-located element's text content, or None if absent/empty.
 
@@ -171,12 +181,10 @@ def parse_part_select(elem: etree._Element) -> Optional[PartSelect]:
     if part_select is None:
         return None
     range_elem = child(part_select, "range")
-    indices_elem = child(part_select, "indices")
-    indices = texts(indices_elem, "index") if indices_elem is not None else []
     return PartSelect(
         range_left=text(range_elem, "left") if range_elem is not None else None,
         range_right=text(range_elem, "right") if range_elem is not None else None,
-        indices=indices,
+        indices=parse_texts(part_select, "indices", "index"),
     )
 
 

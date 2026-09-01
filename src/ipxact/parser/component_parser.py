@@ -106,6 +106,7 @@ from .common_parser import (
     parse_protocol,
     parse_qualifier,
     parse_sub_port_references,
+    parse_texts,
     parse_timing_constraints,
     parse_vectors,
     parse_vendor_extensions,
@@ -207,6 +208,7 @@ def _parse_target_interface(elem: etree._Element) -> TargetInterface:
     memory_map_ref_elem = child(elem, "memoryMapRef")
     return TargetInterface(
         memory_map_ref=memory_map_ref_elem.get("memoryMapRef") if memory_map_ref_elem is not None else None,
+        mode_refs=parse_mode_refs(memory_map_ref_elem) if memory_map_ref_elem is not None else [],
         transparent_bridges=[
             TransparentBridge(initiator_ref=b.get("initiatorRef", "")) for b in children(elem, "transparentBridge")
         ],
@@ -340,14 +342,9 @@ def _parse_indirect_interface(elem: etree._Element) -> IndirectInterface:
 
 
 def _parse_channel(elem: etree._Element) -> Channel:
-    refs = []
-    for ref_elem in children(elem, "busInterfaceRef"):
-        local_name = text(ref_elem, "localName")
-        if local_name is not None:
-            refs.append(local_name)
     return Channel(
         name=text(elem, "name") or "",
-        bus_interface_refs=refs,
+        bus_interface_refs=_parse_file_set_refs(elem, tag="busInterfaceRef"),
         display_name=text(elem, "displayName"),
         description=text(elem, "description"),
         vendor_extensions=parse_vendor_extensions(elem),
@@ -978,7 +975,6 @@ def _parse_clearbox_element(elem: etree._Element) -> ClearboxElement:
 
 def _parse_component_generator(elem: etree._Element) -> ComponentGenerator:
     api_type_elem = child(elem, "apiType")
-    transport_methods_container = child(elem, "transportMethods")
     return ComponentGenerator(
         name=text(elem, "name") or "",
         generator_exe=text(elem, "generatorExe") or "",
@@ -986,9 +982,7 @@ def _parse_component_generator(elem: etree._Element) -> ComponentGenerator:
         parameters=parse_parameters(elem),
         api_type=elem_text(api_type_elem),
         api_service=text(elem, "apiService") or "SOAP",
-        transport_methods=(
-            texts(transport_methods_container, "transportMethod") if transport_methods_container is not None else []
-        ),
+        transport_methods=parse_texts(elem, "transportMethods", "transportMethod"),
         groups=texts(elem, "group"),
         scope=elem.get("scope", "instance"),
         hidden=attr_bool(elem, "hidden", False),

@@ -24,6 +24,7 @@ from .common_parser import (
     parse_parameters,
     parse_part_select,
     parse_sub_port_references,
+    parse_texts,
     parse_vendor_extensions,
     parse_vlnv,
     parse_vlnv_ref,
@@ -118,13 +119,10 @@ def _parse_ad_hoc_connection(elem: etree._Element) -> AdHocConnection:
 
 
 def _parse_active_interface(elem: etree._Element) -> ActiveInterface:
-    exclude_ports_container = child(elem, "excludePorts")
     return ActiveInterface(
         component_instance_ref=elem.get("componentInstanceRef", ""),
         bus_ref=elem.get("busRef", ""),
-        exclude_ports=(
-            texts(exclude_ports_container, "excludePort") if exclude_ports_container is not None else []
-        ),
+        exclude_ports=parse_texts(elem, "excludePorts", "excludePort"),
         description=text(elem, "description"),
         vendor_extensions=parse_vendor_extensions(elem),
     )
