@@ -277,7 +277,8 @@ def _parse_bus_interface(elem: etree._Element) -> BusInterface:
         monitor=monitor,
         connection_required=bool_text(elem, "connectionRequired", False),
         bits_in_lau=text(elem, "bitsInLau"),
-        bit_steering=text(elem, "bitSteering"),
+        # bitSteering defaults to "0" when absent
+        bit_steering=text(elem, "bitSteering") or "0",
         endianness=text(elem, "endianness"),
         parameters=parse_parameters(elem),
         display_name=text(elem, "displayName"),
@@ -458,7 +459,12 @@ def _parse_field_access_policy(elem: etree._Element) -> FieldAccessPolicy:
 
     modified_write_value = elem_text(modified_write_value_elem)
     read_action = elem_text(read_action_elem)
-    test_constraint = (testable_elem.get("testConstraint") or "").strip() if testable_elem is not None else ""
+    if testable_elem is not None:
+        # testConstraint defaults to "unconstrained" when <testable> is present
+        # without the attribute (memoryMap.xsd: testConstraint default="unconstrained").
+        test_constraint = TestConstraint(testable_elem.get("testConstraint") or "unconstrained")
+    else:
+        test_constraint = None
 
     return FieldAccessPolicy(
         mode_refs=parse_mode_refs(elem),
@@ -469,8 +475,8 @@ def _parse_field_access_policy(elem: etree._Element) -> FieldAccessPolicy:
         read_response=text(elem, "readResponse"),
         broadcast_to=broadcast_to,
         access_restrictions=parse_children(elem, "accessRestrictions", "accessRestriction", _parse_access_restriction),
-        testable=as_bool(testable_elem.text) if testable_elem is not None else None,
-        test_constraint=TestConstraint(test_constraint) if test_constraint else None,
+        testable=bool_text(elem, "testable"),
+        test_constraint=test_constraint,
         reserved=text(elem, "reserved"),
     )
 

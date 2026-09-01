@@ -69,6 +69,7 @@ class TargetInterface:
     """ipxact:target - role-specific content of a busInterface acting as target."""
 
     memory_map_ref: Optional[str] = None
+    mode_refs: list[ModeRef] = field(default_factory=list)
     transparent_bridges: list[TransparentBridge] = field(default_factory=list)
     file_set_ref_groups: list[FileSetRefGroup] = field(default_factory=list)
 

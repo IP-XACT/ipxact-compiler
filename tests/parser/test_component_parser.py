@@ -4,10 +4,16 @@ model matches the source file, exercising the component_parser end to end.
 
 from pathlib import Path
 
+from lxml import etree
+
+from ipxact.parser.component_parser import _parse_field_access_policy
 from ipxact.parser.main_parser import parse_file
 from ipxact.schema.businterface import InterfaceMode
 from ipxact.schema.memorymap import AddressBlock
+from ipxact.schema.memorymap import TestConstraint as FieldTestConstraint
 from ipxact.schema.ports import Direction
+
+NS = "http://www.accellera.org/XMLSchema/IPXACT/1685-2022"
 
 FIXTURE = Path(__file__).parent / "xml" / "apb_uart.xml"
 COMMENT_FIXTURE = Path(__file__).parent / "xml" / "apb_uart_with_comment.xml"
@@ -25,6 +31,31 @@ def test_bus_interface_target_mode():
     assert apb.mode is InterfaceMode.TARGET
     assert str(apb.bus_type) == "amba.com:AMBA4:APB4:r0p0_0"
     assert apb.target.memory_map_ref == "apb_uart_mm"
+    assert len(apb.target.mode_refs) == 1
+    assert apb.target.mode_refs[0].name == "default"
+    assert apb.target.mode_refs[0].priority == 1
+
+
+def test_bus_interface_bit_steering_defaults_to_zero():
+    """Regression test: busInterface.xsd declares <bitSteering> with default="0" when
+    absent, but the parser used to leave it None instead of applying the schema default.
+    """
+    component = parse_file(FIXTURE)
+    apb = component.bus_interfaces[0]
+    assert apb.bit_steering == "0"
+
+
+def test_field_access_policy_test_constraint_defaults_to_unconstrained():
+    """Regression test: memoryMap.xsd's <testable> element declares its testConstraint
+    attribute with default="unconstrained" when absent, but the parser used to leave
+    test_constraint None instead of applying the schema default.
+    """
+    elem = etree.fromstring(
+        f'<ipxact:fieldAccessPolicy xmlns:ipxact="{NS}"><ipxact:testable>true</ipxact:testable></ipxact:fieldAccessPolicy>'
+    )
+    policy = _parse_field_access_policy(elem)
+    assert policy.testable is True
+    assert policy.test_constraint is FieldTestConstraint.UNCONSTRAINED
 
 
 def test_bus_interface_abstraction_port_map():

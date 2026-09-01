@@ -78,7 +78,8 @@ def _parse_wire_mode_constraints(elem: etree._Element) -> WireModeConstraints:
         presence=Presence(presence) if presence else Presence.OPTIONAL,
         width=elem_text(width_elem),
         width_all_bits_required=attr_bool(width_elem, "allBits", False) if width_elem is not None else False,
-        direction=elem_text(direction_elem),
+        # direction defaults to "out" when absent
+        direction=elem_text(direction_elem) or "out",
         mode_constraints=(
             _parse_port_constraints(mode_constraints_elem) if mode_constraints_elem is not None else None
         ),
@@ -114,7 +115,8 @@ def _parse_transactional_mode_constraints(elem: etree._Element) -> Transactional
     kind_elem = child(elem, "kind")
     return TransactionalModeConstraints(
         presence=Presence(presence) if presence else Presence.OPTIONAL,
-        initiative=elem_text(initiative_elem),
+        # initiative defaults to "requires" when absent
+        initiative=elem_text(initiative_elem) or "requires",
         kind=elem_text(kind_elem),
         bus_width=text(elem, "busWidth"),
         protocol=parse_protocol(elem),

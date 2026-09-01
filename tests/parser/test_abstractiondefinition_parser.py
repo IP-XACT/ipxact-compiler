@@ -7,7 +7,10 @@ from pathlib import Path
 
 from lxml import etree
 
-from ipxact.parser.abstractiondefinition_parser import _parse_wire_mode_constraints
+from ipxact.parser.abstractiondefinition_parser import (
+    _parse_transactional_mode_constraints,
+    _parse_wire_mode_constraints,
+)
 from ipxact.parser.main_parser import parse_file
 from ipxact.schema.abstractiondefinition import Presence
 
@@ -37,6 +40,26 @@ def test_data_port_is_optional_with_width():
     assert pwdata.wire.on_initiator.presence is Presence.OPTIONAL
     assert pwdata.wire.on_initiator.width == "32"
     assert pwdata.wire.on_initiator.width_all_bits_required is True
+
+
+def test_wire_mode_direction_defaults_to_out():
+    """Regression test: abstractionDefinition.xsd's wirePort group declares
+    <direction> with default="out" when absent, but the parser used to leave
+    it None instead of applying the schema default.
+    """
+    ns = "http://www.accellera.org/XMLSchema/IPXACT/1685-2022"
+    elem = etree.fromstring(f'<ipxact:onInitiator xmlns:ipxact="{ns}"><ipxact:presence>required</ipxact:presence></ipxact:onInitiator>')
+    assert _parse_wire_mode_constraints(elem).direction == "out"
+
+
+def test_transactional_initiative_defaults_to_requires():
+    """Regression test: abstractionDefinition.xsd's transactionalPort group declares
+    <initiative> with default="requires" when absent, but the parser used to leave
+    it None instead of applying the schema default.
+    """
+    ns = "http://www.accellera.org/XMLSchema/IPXACT/1685-2022"
+    elem = etree.fromstring(f'<ipxact:onInitiator xmlns:ipxact="{ns}"><ipxact:presence>required</ipxact:presence></ipxact:onInitiator>')
+    assert _parse_transactional_mode_constraints(elem).initiative == "requires"
 
 
 def test_pretty_printed_presence_does_not_crash():
