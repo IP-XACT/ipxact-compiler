@@ -26,11 +26,17 @@
       </ipxact:abstractionTypes>
       <ipxact:target>
         <ipxact:memoryMapRef memoryMapRef="apb_uart_mm">
-          <ipxact:modeRef priority="1">default</ipxact:modeRef>
+          <ipxact:modeRef>default</ipxact:modeRef>
         </ipxact:memoryMapRef>
       </ipxact:target>
     </ipxact:busInterface>
   </ipxact:busInterfaces>
+
+  <ipxact:modes>
+    <ipxact:mode>
+      <ipxact:name>default</ipxact:name>
+    </ipxact:mode>
+  </ipxact:modes>
 
   <ipxact:memoryMaps>
     <ipxact:memoryMap>

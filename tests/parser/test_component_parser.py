@@ -33,7 +33,13 @@ def test_bus_interface_target_mode():
     assert apb.target.memory_map_ref == "apb_uart_mm"
     assert len(apb.target.mode_refs) == 1
     assert apb.target.mode_refs[0].name == "default"
-    assert apb.target.mode_refs[0].priority == 1
+    assert apb.target.mode_refs[0].priority == 0
+
+
+def test_component_modes():
+    component = parse_file(FIXTURE)
+    assert len(component.modes) == 1
+    assert component.modes[0].name == "default"
 
 
 def test_bus_interface_bit_steering_defaults_to_zero():
