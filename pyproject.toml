@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ipxact-compiler"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Parses IEEE 1685-2022 IP-XACT XML into a Python object model."
 readme = "README.md"
 license = "LGPL-3.0-only"
@@ -40,6 +40,9 @@ Issues = "https://github.com/IP-XACT/ipxact-compiler/issues"
 dev = [
     "pytest",
 ]
+
+[tool.setuptools.dynamic]
+version = {attr = "ipxact.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
