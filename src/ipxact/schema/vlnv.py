@@ -17,7 +17,10 @@ class VLNV:
 
     @classmethod
     def parse(cls, value: str) -> "VLNV":
-        vendor, library, name, version = value.split(":")
+        parts = value.split(":")
+        if len(parts) != 4:
+            raise ValueError(f"expected a 'vendor:library:name:version' string, got: {value!r}")
+        vendor, library, name, version = parts
         return cls(vendor, library, name, version)
 
 

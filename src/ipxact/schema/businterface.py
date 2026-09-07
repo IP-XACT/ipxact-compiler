@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
 
-from .common import Expression, ModeRef, Parameter, PartSelect, VendorExtension
+from .common import Expression, ModeRef, Parameter, PartSelect, SubPortReference, VendorExtension
 from .vlnv import VLNVRef
 
 
@@ -26,6 +26,8 @@ class PortMap:
 
     logical_port: str
     physical_port: Optional[str] = None
+    part_select: Optional[PartSelect] = None
+    sub_port_refs: list[SubPortReference] = field(default_factory=list)
     logical_tie_off: Optional[Expression] = None
     invert: bool = False
     is_informative: bool = False

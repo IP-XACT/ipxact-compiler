@@ -5,7 +5,17 @@ from enum import Enum
 from typing import Optional
 
 from .businterface import FieldReference
-from .common import Expression, ModeRef, Parameter, PartSelect, SubPortReference, VendorExtension, Vector
+from .common import (
+    ArrayBound,
+    Expression,
+    ModeRef,
+    ModuleParameter,
+    Parameter,
+    PartSelect,
+    SubPortReference,
+    VendorExtension,
+    Vector,
+)
 
 
 class Direction(str, Enum):
@@ -217,18 +227,27 @@ class SubPort:
     name: str
     wire: Optional[WirePort] = None
     structured: Optional["StructuredPort"] = None
+    arrays: list[ArrayBound] = field(default_factory=list)
     display_name: Optional[str] = None
     description: Optional[str] = None
     is_io: Optional[bool] = None
 
 
 @dataclass
-class StructuredPort:
-    """ipxact:structured - a struct/union/interface-typed port made of subPorts (port.xsd portStructuredType).
+class StructPortTypeDef:
+    """ipxact:structPortTypeDef - one language-specific type binding for a structured port."""
 
-    structPortTypeDefs (language-specific struct/interface type bindings) is out of scope,
-    same rationale as WirePort's wireTypeDefs.
-    """
+    type_name: str
+    constrained: list[str] = field(default_factory=list)
+    type_definitions: list[str] = field(default_factory=list)
+    type_parameters: list[ModuleParameter] = field(default_factory=list)
+    role: Optional[str] = None  # only valid when struct_type == "interface" (the SV modport)
+    view_refs: list[str] = field(default_factory=list)
+
+
+@dataclass
+class StructuredPort:
+    """ipxact:structured - a struct/union/interface-typed port made of subPorts (port.xsd portStructuredType)."""
 
     struct_type: str  # struct/union/interface
     vectors: list[Vector] = field(default_factory=list)
@@ -236,6 +255,7 @@ class StructuredPort:
     packed: bool = True
     direction: Optional[Direction] = None  # only meaningful when struct_type is struct/union
     phantom: Optional[bool] = None  # only meaningful when struct_type == "interface"
+    struct_port_type_defs: list[StructPortTypeDef] = field(default_factory=list)
 
 
 @dataclass
@@ -261,6 +281,7 @@ class Port:
     transactional: Optional[TransactionalPort] = None
     structured: Optional[StructuredPort] = None
     field_maps: list[FieldMap] = field(default_factory=list)
+    arrays: list[ArrayBound] = field(default_factory=list)
     display_name: Optional[str] = None
     description: Optional[str] = None
     parameters: list[Parameter] = field(default_factory=list)

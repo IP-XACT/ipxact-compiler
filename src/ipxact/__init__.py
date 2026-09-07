@@ -1,4 +1,4 @@
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 from .parser import parse_element, parse_file
 from .schema import *  # noqa: F401,F403

@@ -21,7 +21,7 @@ from ..schema.businterface import (
     TargetInterface,
     TransparentBridge,
 )
-from ..schema.common import ArrayDim, MemoryArray, ModuleParameter, PartSelect
+from ..schema.common import ArrayDim, MemoryArray, ModuleParameter, PartSelect, SubPortReference
 from ..schema.component import Component
 from ..schema.component_sections import (
     ClearboxElement,
@@ -80,6 +80,7 @@ from ..schema.ports import (
     Initiative,
     Port,
     SingleShotDriver,
+    StructPortTypeDef,
     StructuredPort,
     SubPort,
     TransactionalPort,
@@ -93,6 +94,7 @@ from .common_parser import (
     child,
     children,
     elem_text,
+    parse_array_bounds,
     parse_assertions,
     parse_children,
     parse_choices,
@@ -160,12 +162,24 @@ def parse_component(root: etree._Element) -> Component:
 # --- bus interfaces ---
 
 
+def _parse_port_map_sub_port(elem: etree._Element) -> SubPortReference:
+    # physicalPort/subPort names its subport via a <name> child, unlike the attribute-based
+    # ipxact:subPortReference shape used elsewhere (e.g. FieldMap).
+    return SubPortReference(sub_port_ref=text(elem, "name") or "", part_select=parse_part_select(elem))
+
+
 def _parse_port_map(elem: etree._Element) -> PortMap:
     logical_port_elem = child(elem, "logicalPort")
     physical_port_elem = child(elem, "physicalPort")
     return PortMap(
         logical_port=text(logical_port_elem, "name") or "" if logical_port_elem is not None else "",
         physical_port=text(physical_port_elem, "name") if physical_port_elem is not None else None,
+        part_select=parse_part_select(physical_port_elem) if physical_port_elem is not None else None,
+        sub_port_refs=(
+            [_parse_port_map_sub_port(s) for s in children(physical_port_elem, "subPort")]
+            if physical_port_elem is not None
+            else []
+        ),
         logical_tie_off=text(elem, "logicalTieOff"),
         invert=attr_bool(elem, "invert", False),
         is_informative=bool_text(elem, "isInformative", False),
@@ -777,9 +791,23 @@ def _parse_sub_port(elem: etree._Element) -> SubPort:
         name=text(elem, "name") or "",
         wire=_parse_wire_port(wire_elem) if wire_elem is not None else None,
         structured=_parse_structured_port(structured_elem) if structured_elem is not None else None,
+        arrays=parse_array_bounds(elem),
         display_name=text(elem, "displayName"),
         description=text(elem, "description"),
         is_io=as_bool(elem.get("isIO")),
+    )
+
+
+def _parse_struct_port_type_def(elem: etree._Element) -> StructPortTypeDef:
+    type_name_elem = child(elem, "typeName")
+    constrained = type_name_elem.get("constrained") if type_name_elem is not None else None
+    return StructPortTypeDef(
+        type_name=(elem_text(type_name_elem) or "") if type_name_elem is not None else "",
+        constrained=constrained.split() if constrained else [],
+        type_definitions=texts(elem, "typeDefinition"),
+        type_parameters=parse_children(elem, "typeParameters", "typeParameter", _parse_module_parameter),
+        role=text(elem, "role"),
+        view_refs=texts(elem, "viewRef"),
     )
 
 
@@ -801,6 +829,9 @@ def _parse_structured_port(elem: etree._Element) -> StructuredPort:
         packed=attr_bool(elem, "packed", True),
         direction=direction,
         phantom=phantom,
+        struct_port_type_defs=parse_children(
+            elem, "structPortTypeDefs", "structPortTypeDef", _parse_struct_port_type_def
+        ),
     )
 
 
@@ -823,6 +854,7 @@ def _parse_port(elem: etree._Element) -> Port:
         transactional=_parse_transactional_port(transactional_elem) if transactional_elem is not None else None,
         structured=_parse_structured_port(structured_elem) if structured_elem is not None else None,
         field_maps=parse_children(elem, "fieldMaps", "fieldMap", _parse_field_map),
+        arrays=parse_array_bounds(elem),
         display_name=text(elem, "displayName"),
         description=text(elem, "description"),
         parameters=parse_parameters(elem),

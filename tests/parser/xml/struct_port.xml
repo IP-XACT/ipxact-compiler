@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ipxact:component xmlns:ipxact="http://www.accellera.org/XMLSchema/IPXACT/1685-2022">
+  <ipxact:vendor>example.org</ipxact:vendor>
+  <ipxact:library>ip</ipxact:library>
+  <ipxact:name>struct_port</ipxact:name>
+  <ipxact:version>1.0</ipxact:version>
+
+  <ipxact:busInterfaces>
+    <ipxact:busInterface>
+      <ipxact:name>apb</ipxact:name>
+      <ipxact:busType vendor="amba.com" library="AMBA4" name="APB4" version="r0p0_0"/>
+      <ipxact:abstractionTypes>
+        <ipxact:abstractionType>
+          <ipxact:abstractionRef vendor="amba.com" library="AMBA4" name="APB4_rtl" version="r0p0_0"/>
+          <ipxact:portMaps>
+            <ipxact:portMap>
+              <ipxact:logicalPort>
+                <ipxact:name>PWDATA</ipxact:name>
+              </ipxact:logicalPort>
+              <ipxact:physicalPort>
+                <ipxact:name>apb_req</ipxact:name>
+                <ipxact:partSelect>
+                  <ipxact:range>
+                    <ipxact:left>7</ipxact:left>
+                    <ipxact:right>0</ipxact:right>
+                  </ipxact:range>
+                </ipxact:partSelect>
+                <ipxact:subPort>
+                  <ipxact:name>pwdata</ipxact:name>
+                </ipxact:subPort>
+              </ipxact:physicalPort>
+            </ipxact:portMap>
+          </ipxact:portMaps>
+        </ipxact:abstractionType>
+      </ipxact:abstractionTypes>
+      <ipxact:target>
+        <ipxact:memoryMapRef memoryMapRef="mm"/>
+      </ipxact:target>
+    </ipxact:busInterface>
+  </ipxact:busInterfaces>
+
+  <ipxact:memoryMaps>
+    <ipxact:memoryMap>
+      <ipxact:name>mm</ipxact:name>
+      <ipxact:addressBlock>
+        <ipxact:name>regs</ipxact:name>
+        <ipxact:baseAddress>0x0</ipxact:baseAddress>
+        <ipxact:range>0x100</ipxact:range>
+        <ipxact:width>32</ipxact:width>
+      </ipxact:addressBlock>
+    </ipxact:memoryMap>
+  </ipxact:memoryMaps>
+
+  <ipxact:model>
+    <ipxact:views>
+      <ipxact:view>
+        <ipxact:name>rtl</ipxact:name>
+      </ipxact:view>
+    </ipxact:views>
+    <ipxact:ports>
+      <ipxact:port>
+        <ipxact:name>apb_req</ipxact:name>
+        <ipxact:structured>
+          <ipxact:struct direction="out"/>
+          <ipxact:subPorts>
+            <ipxact:subPort>
+              <ipxact:name>pwdata</ipxact:name>
+              <ipxact:wire>
+                <ipxact:direction>out</ipxact:direction>
+              </ipxact:wire>
+              <ipxact:arrays>
+                <ipxact:array>
+                  <ipxact:left>0</ipxact:left>
+                  <ipxact:right>3</ipxact:right>
+                </ipxact:array>
+              </ipxact:arrays>
+            </ipxact:subPort>
+          </ipxact:subPorts>
+          <ipxact:structPortTypeDefs>
+            <ipxact:structPortTypeDef>
+              <ipxact:typeName constrained="WIDTH DEPTH">apb_req_t</ipxact:typeName>
+              <ipxact:typeDefinition>apb_pkg.sv</ipxact:typeDefinition>
+              <ipxact:typeParameters>
+                <ipxact:typeParameter>
+                  <ipxact:name>WIDTH</ipxact:name>
+                  <ipxact:value>32</ipxact:value>
+                </ipxact:typeParameter>
+              </ipxact:typeParameters>
+              <ipxact:viewRef>rtl</ipxact:viewRef>
+            </ipxact:structPortTypeDef>
+          </ipxact:structPortTypeDefs>
+        </ipxact:structured>
+      </ipxact:port>
+      <ipxact:port>
+        <ipxact:name>mem</ipxact:name>
+        <ipxact:wire>
+          <ipxact:direction>out</ipxact:direction>
+        </ipxact:wire>
+        <ipxact:arrays>
+          <ipxact:array>
+            <ipxact:left>0</ipxact:left>
+            <ipxact:right>15</ipxact:right>
+          </ipxact:array>
+        </ipxact:arrays>
+      </ipxact:port>
+    </ipxact:ports>
+  </ipxact:model>
+</ipxact:component>
