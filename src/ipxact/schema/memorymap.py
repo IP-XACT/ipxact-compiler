@@ -253,10 +253,15 @@ MemoryMapItem = Union["Bank", AddressBlock, SubspaceMap]
 
 @dataclass
 class Bank:
-    """ipxact:bank - a bank of address blocks or nested banks, aligned serially or in parallel."""
+    """ipxact:bank - a bank of address blocks or nested banks, aligned serially or in parallel.
+
+    base_address is unset when this bank is nested inside another bank: nested banks do not
+    carry their own address, matching the schema's separate (address-less) bankedBankType.
+    """
 
     name: str
     bank_alignment: BankAlignment
+    base_address: Optional[Expression] = None
     items: list[MemoryMapItem] = field(default_factory=list)
     usage: Optional[UsageType] = None
     volatile: Optional[bool] = None

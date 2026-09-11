@@ -618,6 +618,7 @@ def _parse_bank(elem: etree._Element) -> Bank:
     return Bank(
         name=text(elem, "name") or "",
         bank_alignment=BankAlignment((elem.get("bankAlignment") or "").strip()),
+        base_address=text(elem, "baseAddress"),
         items=_parse_memory_map_items(elem),
         usage=UsageType(usage) if usage else None,
         volatile=bool_text(elem, "volatile"),

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from lxml import etree
 
-from ipxact.parser.component_parser import _parse_field_access_policy
+from ipxact.parser.component_parser import _parse_bank, _parse_field_access_policy
 from ipxact.parser.main_parser import parse_file
 from ipxact.schema.businterface import InterfaceMode
 from ipxact.schema.memorymap import AddressBlock
@@ -88,6 +88,33 @@ def test_memory_map_address_block_and_register():
     assert field.name == "ENABLE"
     assert field.bit_offset == "0"
     assert field.bit_width == "1"
+
+
+def test_bank_base_address():
+    """Regression test: memoryMap.xsd's addressBankType requires a baseAddress (via the
+    addressSpecifier group), but bankedBankType (a bank nested inside another bank) has no
+    addressSpecifier at all, so nested banks correctly have no base_address.
+    """
+    ns = NS
+    elem = etree.fromstring(
+        f'<ipxact:bank xmlns:ipxact="{ns}" bankAlignment="serial">'
+        "<ipxact:name>outer_bank</ipxact:name>"
+        "<ipxact:baseAddress>0x1000</ipxact:baseAddress>"
+        '<ipxact:bank bankAlignment="parallel">'
+        "<ipxact:name>inner_bank</ipxact:name>"
+        "<ipxact:addressBlock>"
+        "<ipxact:name>inner_block</ipxact:name>"
+        "<ipxact:range>0x100</ipxact:range>"
+        "<ipxact:width>32</ipxact:width>"
+        "</ipxact:addressBlock>"
+        "</ipxact:bank>"
+        "</ipxact:bank>"
+    )
+    outer = _parse_bank(elem)
+    assert outer.base_address == "0x1000"
+
+    inner = outer.items[0]
+    assert inner.base_address is None
 
 
 def test_model_ports():
