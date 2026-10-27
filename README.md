@@ -5,7 +5,7 @@ XML documents into a Python object model.
 
 It is a standalone, general-purpose parsing library, not tied to any specific downstream tool or
 flow. `ipxact-compiler` reads IP-XACT and hands you back Python objects; it does not resolve
-cross-file references, elaborate a design, validate semantic consistency, or generate any output.
+cross-file references, link a design, validate semantic consistency, or generate any output.
 That is the job of tools built on top of it.
 
 ## What it supports
