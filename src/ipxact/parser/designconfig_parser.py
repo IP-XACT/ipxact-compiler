@@ -16,11 +16,13 @@ from .common_parser import (
     parse_assertions,
     parse_choices,
     parse_configurable_element_values,
+    parse_name_group,
     parse_parameters,
     parse_vendor_extensions,
     parse_vlnv,
     parse_vlnv_ref,
     text,
+    xml_id,
 )
 
 
@@ -40,9 +42,8 @@ def parse_designconfig(root: etree._Element) -> DesignConfiguration:
         choices=parse_choices(root),
         parameters=parse_parameters(root),
         assertions=parse_assertions(root),
-        display_name=text(root, "displayName"),
-        short_description=text(root, "shortDescription"),
-        description=text(root, "description"),
+        **parse_name_group(root),
+        xml_id=xml_id(root),
         vendor_extensions=parse_vendor_extensions(root),
     )
 
@@ -51,6 +52,7 @@ def _parse_interface_ref(elem: etree._Element) -> InterfaceRef:
     return InterfaceRef(
         component_ref=elem.get("componentRef", ""),
         bus_ref=elem.get("busRef", ""),
+        xml_id=xml_id(elem),
         vendor_extensions=parse_vendor_extensions(elem),
     )
 
@@ -60,9 +62,8 @@ def _parse_abstractor_instance(elem: etree._Element) -> AbstractorInstance:
         instance_name=text(elem, "instanceName") or "",
         abstractor_ref=parse_vlnv_ref(child(elem, "abstractorRef")),
         view_name=text(elem, "viewName") or "",
-        display_name=text(elem, "displayName"),
-        short_description=text(elem, "shortDescription"),
-        description=text(elem, "description"),
+        **parse_name_group(elem),
+        xml_id=xml_id(elem),
     )
 
 
@@ -70,6 +71,7 @@ def _parse_abstractor_chain(elem: etree._Element) -> AbstractorChain:
     return AbstractorChain(
         abstractors=[_parse_abstractor_instance(e) for e in children(elem, "abstractorInstance")],
         interface_refs=[_parse_interface_ref(e) for e in children(elem, "interfaceRef")],
+        xml_id=xml_id(elem),
         vendor_extensions=parse_vendor_extensions(elem),
     )
 
@@ -78,6 +80,7 @@ def _parse_interconnection_configuration(elem: etree._Element) -> Interconnectio
     return InterconnectionConfiguration(
         interconnection_ref=text(elem, "interconnectionRef") or "",
         abstractor_chains=[_parse_abstractor_chain(e) for e in children(elem, "abstractorInstances")],
+        xml_id=xml_id(elem),
         vendor_extensions=parse_vendor_extensions(elem),
     )
 
@@ -90,5 +93,6 @@ def _parse_view_configuration(elem: etree._Element) -> ViewConfiguration:
         configurable_element_values=(
             parse_configurable_element_values(view_elem) if view_elem is not None else {}
         ),
+        xml_id=xml_id(elem),
         vendor_extensions=parse_vendor_extensions(elem),
     )

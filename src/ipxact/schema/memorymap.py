@@ -4,7 +4,16 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, Union
 
-from .common import Expression, MemoryArray, ModeRef, Parameter, VendorExtension
+from .common import (
+    AccessHandle,
+    DefinitionRef,
+    Expression,
+    FieldReference,
+    MemoryArray,
+    ModeRef,
+    Parameter,
+    VendorExtension,
+)
 
 
 class AccessType(str, Enum):
@@ -79,6 +88,7 @@ class Reset:
     value: Expression
     mask: Optional[Expression] = None
     reset_type_ref: Optional[str] = None
+    xml_id: Optional[str] = None
 
 
 @dataclass
@@ -89,7 +99,10 @@ class EnumeratedValue:
     value: Expression
     usage: str = "read-write"  # read/write/read-write
     display_name: Optional[str] = None
+    short_description: Optional[str] = None
     description: Optional[str] = None
+    xml_id: Optional[str] = None
+    vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
 @dataclass
@@ -109,6 +122,7 @@ class AccessRestriction:
     mode_refs: list[ModeRef] = field(default_factory=list)
     read_access_mask: Optional[Expression] = None
     write_access_mask: Optional[Expression] = None
+    xml_id: Optional[str] = None
 
 
 @dataclass
@@ -117,44 +131,64 @@ class AccessPolicy:
 
     mode_refs: list[ModeRef] = field(default_factory=list)
     access: Optional[AccessType] = None
+    xml_id: Optional[str] = None
+    vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
 @dataclass
 class FieldAccessPolicy:
-    """ipxact:fieldAccessPolicy - a field's read/write behavior, for one or more modes."""
+    """ipxact:fieldAccessPolicy - a field's read/write behavior, for one or more modes.
+
+    ``modified_write_value_modify`` / ``read_action_modify`` hold the ``modify`` attribute, which
+    names the user-defined behavior when the value is "modify".
+    """
 
     mode_refs: list[ModeRef] = field(default_factory=list)
+    field_access_policy_definition_ref: Optional[DefinitionRef] = None
     access: Optional[AccessType] = None
     modified_write_value: Optional[ModifiedWriteValue] = None
+    modified_write_value_modify: Optional[str] = None
     write_value_constraint: Optional[WriteValueConstraint] = None
     read_action: Optional[ReadAction] = None
+    read_action_modify: Optional[str] = None
     read_response: Optional[Expression] = None
-    broadcast_to: list[str] = field(default_factory=list)
+    broadcast_to: list[FieldReference] = field(default_factory=list)
     access_restrictions: list[AccessRestriction] = field(default_factory=list)
     testable: Optional[bool] = None
     test_constraint: Optional[TestConstraint] = None
     reserved: Optional[Expression] = None
+    xml_id: Optional[str] = None
+    vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
 @dataclass
 class Field:
     """ipxact:field - a bit field within a register (memoryMap.xsd fieldType).
 
-    fieldType's ``aliasOf`` alternative (a field that is purely an alias reference to
-    another field, in place of its own bit_offset/bit_width/access data) is out of scope.
+    A field either describes itself inline (bit_width, volatile, resets, ...), points to a
+    typeDefinitions field definition (``field_definition_ref``), or is an alias of another field
+    (``alias_of``). ``enumeration_definition_ref`` replaces ``enumerated_values`` the same way.
     """
 
     name: str
     bit_offset: Expression
-    bit_width: Expression
+    bit_width: Optional[Expression] = None
+    access_handles: list[AccessHandle] = field(default_factory=list)
     array: Optional[MemoryArray] = None
+    field_definition_ref: Optional[DefinitionRef] = None
+    type_identifier: Optional[str] = None
     volatile: Optional[bool] = None
     resets: list[Reset] = field(default_factory=list)
+    alias_of: Optional[FieldReference] = None
     field_access_policies: list[FieldAccessPolicy] = field(default_factory=list)
+    field_access_policies_xml_id: Optional[str] = None
     enumerated_values: list[EnumeratedValue] = field(default_factory=list)
+    enumeration_definition_ref: Optional[DefinitionRef] = None
     display_name: Optional[str] = None
+    short_description: Optional[str] = None
     description: Optional[str] = None
     parameters: list[Parameter] = field(default_factory=list)
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
@@ -163,47 +197,67 @@ class AlternateRegister:
     """ipxact:alternateRegister - an alternate field layout for a register, selected by mode."""
 
     name: str
+    access_handles: list[AccessHandle] = field(default_factory=list)
     mode_refs: list[ModeRef] = field(default_factory=list)
+    type_identifier: Optional[str] = None
     volatile: Optional[bool] = None
     access_policies: list[AccessPolicy] = field(default_factory=list)
     fields: list[Field] = field(default_factory=list)
     display_name: Optional[str] = None
+    short_description: Optional[str] = None
     description: Optional[str] = None
     parameters: list[Parameter] = field(default_factory=list)
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
 @dataclass
 class Register:
-    """ipxact:register - a named, addressed register made of fields."""
+    """ipxact:register - a named, addressed register made of fields.
+
+    ``register_definition_ref`` replaces the inline content (size, fields, ...) when set.
+    """
 
     name: str
     address_offset: Expression
-    size: Expression
+    size: Optional[Expression] = None
+    access_handles: list[AccessHandle] = field(default_factory=list)
     array: Optional[MemoryArray] = None
+    register_definition_ref: Optional[DefinitionRef] = None
+    type_identifier: Optional[str] = None
     volatile: Optional[bool] = None
     access_policies: list[AccessPolicy] = field(default_factory=list)
     fields: list[Field] = field(default_factory=list)
     alternate_registers: list[AlternateRegister] = field(default_factory=list)
     display_name: Optional[str] = None
+    short_description: Optional[str] = None
     description: Optional[str] = None
     parameters: list[Parameter] = field(default_factory=list)
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
 @dataclass
 class RegisterFile:
-    """ipxact:registerFile - a nested structure of registers and register files."""
+    """ipxact:registerFile - a nested structure of registers and register files.
+
+    ``register_file_definition_ref`` replaces the inline content (range, registers, ...) when set.
+    """
 
     name: str
     address_offset: Expression
-    range: Expression
+    range: Optional[Expression] = None
+    access_handles: list[AccessHandle] = field(default_factory=list)
     array: Optional[MemoryArray] = None
+    register_file_definition_ref: Optional[DefinitionRef] = None
+    type_identifier: Optional[str] = None
     access_policies: list[AccessPolicy] = field(default_factory=list)
     registers: list[Union[Register, "RegisterFile"]] = field(default_factory=list)
     display_name: Optional[str] = None
+    short_description: Optional[str] = None
     description: Optional[str] = None
     parameters: list[Parameter] = field(default_factory=list)
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
@@ -213,20 +267,28 @@ class AddressBlock:
 
     base_address is unset when the block sits inside a Bank: banked blocks do not carry
     their own address, matching the schema's separate (address-less) bankedBlockType.
+    ``address_block_definition_ref`` replaces the inline content (range, width, registers, ...)
+    when set.
     """
 
     name: str
-    range: Expression
-    width: Expression
+    range: Optional[Expression] = None
+    width: Optional[Expression] = None
     base_address: Optional[Expression] = None
+    access_handles: list[AccessHandle] = field(default_factory=list)
+    array: Optional[MemoryArray] = None
+    address_block_definition_ref: Optional[DefinitionRef] = None
+    type_identifier: Optional[str] = None
     usage: Optional[UsageType] = None
     volatile: Optional[bool] = None
     access_policies: list[AccessPolicy] = field(default_factory=list)
     registers: list[Union[Register, RegisterFile]] = field(default_factory=list)
     misalignment_allowed: bool = True
     display_name: Optional[str] = None
+    short_description: Optional[str] = None
     description: Optional[str] = None
     parameters: list[Parameter] = field(default_factory=list)
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
@@ -243,8 +305,10 @@ class SubspaceMap:
     base_address: Optional[Expression] = None
     segment_ref: Optional[str] = None
     display_name: Optional[str] = None
+    short_description: Optional[str] = None
     description: Optional[str] = None
     parameters: list[Parameter] = field(default_factory=list)
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
@@ -257,44 +321,61 @@ class Bank:
 
     base_address is unset when this bank is nested inside another bank: nested banks do not
     carry their own address, matching the schema's separate (address-less) bankedBankType.
+    ``bank_definition_ref`` replaces the inline content (items, usage, ...) when set.
     """
 
     name: str
     bank_alignment: BankAlignment
     base_address: Optional[Expression] = None
+    access_handles: list[AccessHandle] = field(default_factory=list)
+    bank_definition_ref: Optional[DefinitionRef] = None
     items: list[MemoryMapItem] = field(default_factory=list)
     usage: Optional[UsageType] = None
     volatile: Optional[bool] = None
     access_policies: list[AccessPolicy] = field(default_factory=list)
     parameters: list[Parameter] = field(default_factory=list)
     display_name: Optional[str] = None
+    short_description: Optional[str] = None
     description: Optional[str] = None
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
 @dataclass
 class MemoryRemap:
-    """ipxact:memoryRemap - additional memoryMap content that only applies in given modes."""
+    """ipxact:memoryRemap - additional memoryMap content that only applies in given modes.
+
+    ``remap_definition_ref`` replaces the inline items when set.
+    """
 
     name: str
     mode_refs: list[ModeRef] = field(default_factory=list)
+    remap_definition_ref: Optional[DefinitionRef] = None
     items: list[MemoryMapItem] = field(default_factory=list)
     display_name: Optional[str] = None
+    short_description: Optional[str] = None
     description: Optional[str] = None
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
 @dataclass
 class MemoryMap:
-    """ipxact:memoryMap - a component's addressable space, made of address blocks/banks/subspace maps."""
+    """ipxact:memoryMap - a component's addressable space, made of address blocks/banks/subspace maps.
+
+    ``memory_map_definition_ref`` replaces the inline content (items, remaps, ...) when set.
+    """
 
     name: str
+    memory_map_definition_ref: Optional[DefinitionRef] = None
     items: list[MemoryMapItem] = field(default_factory=list)
     memory_remaps: list[MemoryRemap] = field(default_factory=list)
     address_unit_bits: Optional[Expression] = None
     shared: Optional[SharedType] = None
     display_name: Optional[str] = None
+    short_description: Optional[str] = None
     description: Optional[str] = None
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
@@ -305,7 +386,9 @@ class LocalMemoryMap:
     name: str
     items: list[Union[Bank, AddressBlock]] = field(default_factory=list)
     display_name: Optional[str] = None
+    short_description: Optional[str] = None
     description: Optional[str] = None
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
@@ -317,7 +400,9 @@ class Segment:
     address_offset: Expression
     range: Expression
     display_name: Optional[str] = None
+    short_description: Optional[str] = None
     description: Optional[str] = None
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
@@ -332,6 +417,8 @@ class AddressSpace:
     address_unit_bits: Optional[Expression] = None
     local_memory_map: Optional[LocalMemoryMap] = None
     display_name: Optional[str] = None
+    short_description: Optional[str] = None
     description: Optional[str] = None
     parameters: list[Parameter] = field(default_factory=list)
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)

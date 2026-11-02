@@ -24,13 +24,9 @@ from .vlnv import VLNV
 class Component:
     """ipxact:component - the root document for a reusable IP (component.xsd componentType).
 
-    A complete mapping of componentType, with the following deliberate simplifications
-    (see the design discussion this session): no xml:id (XML-internal plumbing, no domain
-    meaning), vendorExtensions kept as opaque raw XML rather than modeled, and no
-    definition/instance indirection (a component always presents its fully-inline shape;
-    resolving a typeDefinitions reference into that shape is the parser's job, not the
-    object model's). A handful of SystemC/TLM/PSS-only leaf features are also out of scope;
-    see the docstrings in ports.py, memorymap.py and component_sections.py for each one.
+    A complete mapping of componentType. vendorExtensions are kept as opaque raw XML rather
+    than modeled, and ``*DefinitionRef`` elements are kept as references: resolving them
+    against a typeDefinitions document is left to the caller.
     """
 
     vlnv: VLNV
@@ -55,4 +51,5 @@ class Component:
     display_name: Optional[str] = None
     short_description: Optional[str] = None
     description: Optional[str] = None
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)

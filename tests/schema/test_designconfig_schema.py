@@ -6,11 +6,12 @@ from ipxact import (
     AbstractorChain,
     AbstractorInstance,
     DesignConfiguration,
+    Expression,
     InterconnectionConfiguration,
     InterfaceRef,
+    ViewConfiguration,
     VLNV,
     VLNVRef,
-    ViewConfiguration,
 )
 
 
@@ -34,7 +35,7 @@ def build_design_configuration() -> DesignConfiguration:
     view_configuration = ViewConfiguration(
         instance_name="uart0",
         view_ref="rtl",
-        configurable_element_values={"BAUD_RATE": "115200"},
+        configurable_element_values={"BAUD_RATE": Expression("115200")},
     )
 
     return DesignConfiguration(
@@ -67,4 +68,4 @@ def test_design_configuration_view_configuration():
     view_configuration = design_config.view_configurations[0]
     assert view_configuration.instance_name == "uart0"
     assert view_configuration.view_ref == "rtl"
-    assert view_configuration.configurable_element_values["BAUD_RATE"] == "115200"
+    assert view_configuration.configurable_element_values["BAUD_RATE"].value == "115200"

@@ -49,4 +49,4 @@ def test_file_dependencies():
         "</ipxact:file>"
     )
     file = parse_file_element(root.find(f"{{{NS}}}file"))
-    assert file.dependencies == ["gen", "lib"]
+    assert [d.value for d in file.dependencies] == ["gen", "lib"]

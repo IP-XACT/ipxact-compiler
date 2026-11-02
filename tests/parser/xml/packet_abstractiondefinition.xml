@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ipxact:abstractionDefinition xmlns:ipxact="http://www.accellera.org/XMLSchema/IPXACT/1685-2022" xml:id="absdef">
+  <ipxact:vendor>example.org</ipxact:vendor>
+  <ipxact:library>bus</ipxact:library>
+  <ipxact:name>stream_tlm</ipxact:name>
+  <ipxact:version>1.0</ipxact:version>
+  <ipxact:busType vendor="example.org" library="bus" name="stream" version="1.0"/>
+  <ipxact:ports>
+    <ipxact:port xml:id="p_data">
+      <ipxact:logicalName>DATA</ipxact:logicalName>
+      <ipxact:transactional>
+        <ipxact:onSystem xml:id="sys_dbg">
+          <ipxact:group>debug</ipxact:group>
+          <ipxact:kind custom="dbg_socket">custom</ipxact:kind>
+        </ipxact:onSystem>
+        <ipxact:onInitiator>
+          <ipxact:kind custom="my_socket">custom</ipxact:kind>
+          <ipxact:busWidth minimum="8" maximum="64">32</ipxact:busWidth>
+        </ipxact:onInitiator>
+      </ipxact:transactional>
+      <ipxact:packets>
+        <ipxact:packet>
+          <ipxact:name>frame</ipxact:name>
+          <ipxact:endianness>little</ipxact:endianness>
+          <ipxact:packetFields>
+            <ipxact:packetField>
+              <ipxact:name>header</ipxact:name>
+              <ipxact:width>8</ipxact:width>
+              <ipxact:value>'hA5</ipxact:value>
+              <ipxact:qualifier>
+                <ipxact:isOpcode>true</ipxact:isOpcode>
+              </ipxact:qualifier>
+            </ipxact:packetField>
+            <ipxact:packetField>
+              <ipxact:name>payload</ipxact:name>
+              <ipxact:width>24</ipxact:width>
+            </ipxact:packetField>
+          </ipxact:packetFields>
+        </ipxact:packet>
+      </ipxact:packets>
+    </ipxact:port>
+    <ipxact:port>
+      <ipxact:logicalName>CLK</ipxact:logicalName>
+      <ipxact:wire>
+        <ipxact:onTarget>
+          <ipxact:modeConstraints>
+            <ipxact:driveConstraint>
+              <ipxact:cellSpecification>
+                <ipxact:cellFunction other="clkbuf">other</ipxact:cellFunction>
+              </ipxact:cellSpecification>
+            </ipxact:driveConstraint>
+          </ipxact:modeConstraints>
+        </ipxact:onTarget>
+      </ipxact:wire>
+    </ipxact:port>
+  </ipxact:ports>
+</ipxact:abstractionDefinition>

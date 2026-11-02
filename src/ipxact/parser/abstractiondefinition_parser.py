@@ -5,6 +5,8 @@ from lxml import etree
 from ..schema.abstractiondefinition import (
     AbstractionDefinition,
     AbstractionPort,
+    Packet,
+    PacketField,
     PortConstraints,
     Presence,
     RequiresDriver,
@@ -22,11 +24,14 @@ from .common_parser import (
     child,
     children,
     elem_text,
+    expr,
     parse_assertions,
     parse_children,
     parse_choices,
     parse_drive_constraint,
+    parse_optional_expression,
     parse_load_constraint,
+    parse_name_group,
     parse_parameters,
     parse_protocol,
     parse_qualifier,
@@ -34,7 +39,9 @@ from .common_parser import (
     parse_vendor_extensions,
     parse_vlnv,
     parse_vlnv_ref,
+    required_expr,
     text,
+    xml_id,
 )
 
 
@@ -49,9 +56,8 @@ def parse_abstractiondefinition(root: etree._Element) -> AbstractionDefinition:
         choices=parse_choices(root),
         parameters=parse_parameters(root),
         assertions=parse_assertions(root),
-        display_name=text(root, "displayName"),
-        short_description=text(root, "shortDescription"),
-        description=text(root, "description"),
+        **parse_name_group(root),
+        xml_id=xml_id(root),
         vendor_extensions=parse_vendor_extensions(root),
     )
 
@@ -76,7 +82,7 @@ def _parse_wire_mode_constraints(elem: etree._Element) -> WireModeConstraints:
     mirrored_mode_constraints_elem = child(elem, "mirroredModeConstraints")
     return WireModeConstraints(
         presence=Presence(presence) if presence else Presence.OPTIONAL,
-        width=elem_text(width_elem),
+        width=parse_optional_expression(width_elem),
         width_all_bits_required=attr_bool(width_elem, "allBits", False) if width_elem is not None else False,
         # default to out and missing means no restiction, so None.
         direction=(elem_text(direction_elem) or "out") if direction_elem is not None else None,
@@ -92,7 +98,9 @@ def _parse_wire_mode_constraints(elem: etree._Element) -> WireModeConstraints:
 
 
 def _parse_wire_system_constraints(elem: etree._Element) -> WireSystemConstraints:
-    return WireSystemConstraints(group=text(elem, "group") or "", constraints=_parse_wire_mode_constraints(elem))
+    return WireSystemConstraints(
+        group=text(elem, "group") or "", constraints=_parse_wire_mode_constraints(elem), xml_id=xml_id(elem)
+    )
 
 
 def _parse_wire_abstraction_port(elem: etree._Element) -> WireAbstractionPort:
@@ -104,7 +112,7 @@ def _parse_wire_abstraction_port(elem: etree._Element) -> WireAbstractionPort:
         on_system=[_parse_wire_system_constraints(e) for e in children(elem, "onSystem")],
         on_initiator=_parse_wire_mode_constraints(on_initiator_elem) if on_initiator_elem is not None else None,
         on_target=_parse_wire_mode_constraints(on_target_elem) if on_target_elem is not None else None,
-        default_value=text(elem, "defaultValue"),
+        default_value=expr(elem, "defaultValue"),
         requires_driver=_parse_requires_driver(requires_driver_elem) if requires_driver_elem is not None else None,
     )
 
@@ -118,14 +126,15 @@ def _parse_transactional_mode_constraints(elem: etree._Element) -> Transactional
         # Same rule as <direction>: missing means "not restricted", default is "requires".
         initiative=(elem_text(initiative_elem) or "requires") if initiative_elem is not None else None,
         kind=elem_text(kind_elem),
-        bus_width=text(elem, "busWidth"),
+        kind_custom=kind_elem.get("custom") if kind_elem is not None else None,
+        bus_width=expr(elem, "busWidth"),
         protocol=parse_protocol(elem),
     )
 
 
 def _parse_transactional_system_constraints(elem: etree._Element) -> TransactionalSystemConstraints:
     return TransactionalSystemConstraints(
-        group=text(elem, "group") or "", constraints=_parse_transactional_mode_constraints(elem)
+        group=text(elem, "group") or "", constraints=_parse_transactional_mode_constraints(elem), xml_id=xml_id(elem)
     )
 
 
@@ -142,6 +151,30 @@ def _parse_transactional_abstraction_port(elem: etree._Element) -> Transactional
     )
 
 
+def _parse_packet_field(elem: etree._Element) -> PacketField:
+    return PacketField(
+        name=text(elem, "name") or "",
+        width=required_expr(elem, "width"),
+        value=expr(elem, "value"),
+        endianness=text(elem, "endianness"),
+        qualifier=parse_qualifier(elem),
+        **parse_name_group(elem),
+        xml_id=xml_id(elem),
+        vendor_extensions=parse_vendor_extensions(elem),
+    )
+
+
+def _parse_packet(elem: etree._Element) -> Packet:
+    return Packet(
+        name=text(elem, "name") or "",
+        packet_fields=parse_children(elem, "packetFields", "packetField", _parse_packet_field),
+        endianness=text(elem, "endianness"),
+        **parse_name_group(elem),
+        xml_id=xml_id(elem),
+        vendor_extensions=parse_vendor_extensions(elem),
+    )
+
+
 def _parse_abstraction_port(elem: etree._Element) -> AbstractionPort:
     wire_elem = child(elem, "wire")
     transactional_elem = child(elem, "transactional")
@@ -151,9 +184,9 @@ def _parse_abstraction_port(elem: etree._Element) -> AbstractionPort:
         transactional=(
             _parse_transactional_abstraction_port(transactional_elem) if transactional_elem is not None else None
         ),
+        packets=parse_children(elem, "packets", "packet", _parse_packet),
         match=bool_text(elem, "match", False),
-        display_name=text(elem, "displayName"),
-        short_description=text(elem, "shortDescription"),
-        description=text(elem, "description"),
+        **parse_name_group(elem),
+        xml_id=xml_id(elem),
         vendor_extensions=parse_vendor_extensions(elem),
     )

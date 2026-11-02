@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Optional
+
+from .common import Expression
 
 
 @dataclass(frozen=True)
@@ -28,15 +31,16 @@ class VLNV:
 class VLNVRef:
     """A reference to another IP-XACT document by VLNV, e.g. busType, abstractionRef, componentRef.
 
-    config_element_values holds raw expression strings keyed by the referenced document's
-    parameterId (ipxact:configurableElementValues), left unresolved for now.
+    config_element_values holds the ipxact:configurableElementValues expressions keyed by the
+    referenced document's parameterId (their referenceId), left unresolved.
     """
 
     vendor: str
     library: str
     name: str
     version: str
-    config_element_values: dict[str, str] = field(default_factory=dict)
+    config_element_values: dict[str, Expression] = field(default_factory=dict)
+    xml_id: Optional[str] = None
 
     def __str__(self) -> str:
         return f"{self.vendor}:{self.library}:{self.name}:{self.version}"

@@ -18,11 +18,11 @@ def test_bus_definition_topology():
     bus_def = parse_file(FIXTURE)
     assert bus_def.direct_connection is True
     assert bus_def.is_addressable is True
-    assert bus_def.max_initiators == "1"
+    assert bus_def.max_initiators.value == "1"
     assert bus_def.max_targets is None
     assert bus_def.broadcast is None
 
 
 def test_bus_definition_system_group_names():
     bus_def = parse_file(FIXTURE)
-    assert bus_def.system_group_names == ["debug"]
+    assert [g.value for g in bus_def.system_group_names] == ["debug"]

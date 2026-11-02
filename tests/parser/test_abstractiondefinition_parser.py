@@ -38,7 +38,7 @@ def test_data_port_is_optional_with_width():
     pwdata = next(p for p in abs_def.ports if p.logical_name == "PWDATA")
     assert pwdata.wire.qualifier.is_data is True
     assert pwdata.wire.on_initiator.presence is Presence.OPTIONAL
-    assert pwdata.wire.on_initiator.width == "32"
+    assert pwdata.wire.on_initiator.width.value == "32"
     assert pwdata.wire.on_initiator.width_all_bits_required is True
 
 
@@ -91,3 +91,40 @@ def test_pretty_printed_presence_does_not_crash():
         "</ipxact:onInitiator>"
     )
     assert _parse_wire_mode_constraints(elem).presence is Presence.REQUIRED
+
+
+PACKET_FIXTURE = Path(__file__).parent / "xml" / "packet_abstractiondefinition.xml"
+
+
+def test_packets():
+    abs_def = parse_file(PACKET_FIXTURE)
+    data = next(p for p in abs_def.ports if p.logical_name == "DATA")
+    assert data.xml_id == "p_data"
+    packet = data.packets[0]
+    assert packet.name == "frame"
+    assert packet.endianness == "little"
+    header, payload = packet.packet_fields
+    assert header.width.value == "8"
+    assert header.value.value == "'hA5"
+    assert header.qualifier.is_opcode is True
+    assert payload.width.value == "24"
+    assert payload.value is None
+
+
+def test_transactional_kind_custom_and_on_system_xml_id():
+    abs_def = parse_file(PACKET_FIXTURE)
+    transactional = next(p for p in abs_def.ports if p.logical_name == "DATA").transactional
+    assert transactional.on_initiator.kind_custom == "my_socket"
+    assert transactional.on_initiator.bus_width.minimum == "8"
+    assert transactional.on_initiator.bus_width.maximum == "64"
+    on_system = transactional.on_system[0]
+    assert on_system.xml_id == "sys_dbg"
+    assert on_system.constraints.kind_custom == "dbg_socket"
+
+
+def test_cell_function_other():
+    abs_def = parse_file(PACKET_FIXTURE)
+    clk = next(p for p in abs_def.ports if p.logical_name == "CLK")
+    cell = clk.wire.on_target.mode_constraints.drive_constraint.cell
+    assert cell.cell_function == "other"
+    assert cell.cell_function_other == "clkbuf"

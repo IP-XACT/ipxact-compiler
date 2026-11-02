@@ -8,15 +8,16 @@ from ipxact import (
     BusInterface,
     Component,
     Direction,
+    Expression,
     InterfaceMode,
     MemoryMap,
     Model,
     Parameter,
     Port,
     PortMap,
+    Vector,
     VLNV,
     VLNVRef,
-    Vector,
     WirePort,
 )
 from ipxact.schema.businterface import AbstractionType
@@ -37,7 +38,11 @@ def build_apb_uart() -> Component:
 
     memory_map = MemoryMap(
         name="apb_uart_mm",
-        items=[AddressBlock(name="regs", base_address="0x0", range="0x100", width="32")],
+        items=[
+            AddressBlock(
+                name="regs", base_address=Expression("0x0"), range=Expression("0x100"), width=Expression("32")
+            )
+        ],
     )
 
     model = Model(
@@ -52,7 +57,7 @@ def build_apb_uart() -> Component:
         bus_interfaces=[apb],
         memory_maps=[memory_map],
         model=model,
-        parameters=[Parameter(name="BAUD_RATE", value="115200", parameter_id="BAUD_RATE")],
+        parameters=[Parameter(name="BAUD_RATE", value=Expression("115200"), parameter_id="BAUD_RATE")],
     )
 
 
@@ -73,8 +78,8 @@ def test_apb_uart_memory_map():
     component = build_apb_uart()
     block = component.memory_maps[0].items[0]
     assert isinstance(block, AddressBlock)
-    assert block.base_address == "0x0"
-    assert block.range == "0x100"
+    assert block.base_address.value == "0x0"
+    assert block.range.value == "0x100"
 
 
 def test_apb_uart_ports():
@@ -86,12 +91,12 @@ def test_apb_uart_ports():
 def test_wire_port_vectors_are_expressions():
     port = Port(
         name="data",
-        wire=WirePort(direction=Direction.OUT, vectors=[Vector(left="7", right="0")]),
+        wire=WirePort(direction=Direction.OUT, vectors=[Vector(left=Expression("7"), right=Expression("0"))]),
     )
-    assert port.wire.vectors[0].left == "7"
+    assert port.wire.vectors[0].left.value == "7"
 
 
 def test_address_block_defaults():
-    block = AddressBlock(name="regs", base_address="0x0", range="0x4", width="32")
+    block = AddressBlock(name="regs", base_address=Expression("0x0"), range=Expression("0x4"), width=Expression("32"))
     assert block.registers == []
     assert AccessType.READ_WRITE.value == "read-write"

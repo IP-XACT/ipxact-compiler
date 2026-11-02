@@ -10,6 +10,7 @@ from .common import (
     Parameter,
     PartSelect,
     SubPortReference,
+    TextValue,
     VendorExtension,
 )
 from .vlnv import VLNV, VLNVRef
@@ -20,7 +21,8 @@ class PowerDomainLink:
     """ipxact:powerDomainLink - links one external power domain to internal instance ones."""
 
     external_power_domain_ref: Expression
-    internal_power_domain_refs: list[str] = field(default_factory=list)
+    internal_power_domain_refs: list[TextValue] = field(default_factory=list)
+    xml_id: Optional[str] = None
 
 
 @dataclass
@@ -33,6 +35,7 @@ class ComponentInstance:
     display_name: Optional[str] = None
     short_description: Optional[str] = None
     description: Optional[str] = None
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
@@ -44,6 +47,7 @@ class InternalPortReference:
     port_ref: str
     sub_port_refs: list[SubPortReference] = field(default_factory=list)
     part_select: Optional[PartSelect] = None
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
@@ -54,6 +58,7 @@ class ExternalPortReference:
     port_ref: str
     sub_port_refs: list[SubPortReference] = field(default_factory=list)
     part_select: Optional[PartSelect] = None
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
@@ -68,6 +73,7 @@ class AdHocConnection:
     display_name: Optional[str] = None
     short_description: Optional[str] = None
     description: Optional[str] = None
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
@@ -77,8 +83,9 @@ class ActiveInterface:
 
     component_instance_ref: str
     bus_ref: str
-    exclude_ports: list[str] = field(default_factory=list)
+    exclude_ports: list[TextValue] = field(default_factory=list)
     description: Optional[str] = None
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
@@ -88,6 +95,7 @@ class HierInterface:
 
     bus_ref: str
     description: Optional[str] = None
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
@@ -102,6 +110,7 @@ class Interconnection:
     display_name: Optional[str] = None
     short_description: Optional[str] = None
     description: Optional[str] = None
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
@@ -113,6 +122,7 @@ class MonitorInterfaceRef:
     bus_ref: str
     path: Optional[str] = None
     description: Optional[str] = None
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
@@ -126,6 +136,7 @@ class MonitorInterconnection:
     display_name: Optional[str] = None
     short_description: Optional[str] = None
     description: Optional[str] = None
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
@@ -144,4 +155,5 @@ class Design:
     display_name: Optional[str] = None
     short_description: Optional[str] = None
     description: Optional[str] = None
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)

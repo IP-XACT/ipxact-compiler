@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional
 
-from .common import Assertion, Choice, Parameter, VendorExtension
+from .common import Assertion, Choice, Expression, Parameter, VendorExtension
 from .vlnv import VLNV, VLNVRef
 
 
@@ -13,6 +13,7 @@ class InterfaceRef:
 
     component_ref: str
     bus_ref: str
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
@@ -26,6 +27,7 @@ class AbstractorInstance:
     display_name: Optional[str] = None
     short_description: Optional[str] = None
     description: Optional[str] = None
+    xml_id: Optional[str] = None
 
 
 @dataclass
@@ -34,6 +36,7 @@ class AbstractorChain:
 
     abstractors: list[AbstractorInstance] = field(default_factory=list)
     interface_refs: list[InterfaceRef] = field(default_factory=list)
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
@@ -43,6 +46,7 @@ class InterconnectionConfiguration:
 
     interconnection_ref: str
     abstractor_chains: list[AbstractorChain] = field(default_factory=list)
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
@@ -52,7 +56,8 @@ class ViewConfiguration:
 
     instance_name: str
     view_ref: str
-    configurable_element_values: dict[str, str] = field(default_factory=dict)
+    configurable_element_values: dict[str, Expression] = field(default_factory=dict)
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
@@ -71,4 +76,5 @@ class DesignConfiguration:
     display_name: Optional[str] = None
     short_description: Optional[str] = None
     description: Optional[str] = None
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)

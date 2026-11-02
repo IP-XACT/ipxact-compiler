@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from ipxact.parser.main_parser import parse_file
-from ipxact.schema.common import ArrayBound, SubPortReference
+from ipxact.schema.common import ArrayBound, Expression, SubPortReference
 from ipxact.schema.ports import Direction
 from ipxact.schema.vlnv import VLNV
 
@@ -25,10 +25,10 @@ def test_structured_port_type_defs():
     type_def = apb_req.structured.struct_port_type_defs[0]
     assert type_def.type_name == "apb_req_t"
     assert type_def.constrained == ["WIDTH", "DEPTH"]
-    assert type_def.type_definitions == ["apb_pkg.sv"]
+    assert [t.value for t in type_def.type_definitions] == ["apb_pkg.sv"]
     assert type_def.type_parameters[0].name == "WIDTH"
-    assert type_def.type_parameters[0].value == "32"
-    assert type_def.view_refs == ["rtl"]
+    assert type_def.type_parameters[0].value.value == "32"
+    assert [v.value for v in type_def.view_refs] == ["rtl"]
 
 
 def test_structured_port_sub_port_arrays():
@@ -38,7 +38,7 @@ def test_structured_port_sub_port_arrays():
     component = parse_file(FIXTURE)
     apb_req = component.model.ports[0]
     sub_port = apb_req.structured.sub_ports[0]
-    assert sub_port.arrays == [ArrayBound(left="0", right="3", array_id=None)]
+    assert sub_port.arrays == [ArrayBound(left=Expression("0"), right=Expression("3"))]
 
 
 def test_port_map_sub_port_refs():
@@ -56,14 +56,14 @@ def test_port_map_physical_port_part_select():
     component = parse_file(FIXTURE)
     port_map = component.bus_interfaces[0].abstraction_types[0].port_maps[0]
     assert port_map.part_select is not None
-    assert port_map.part_select.range_left == "7"
-    assert port_map.part_select.range_right == "0"
+    assert port_map.part_select.range.left.value == "7"
+    assert port_map.part_select.range.right.value == "0"
 
 
 def test_port_arrays():
     component = parse_file(FIXTURE)
     mem = component.model.ports[1]
-    assert mem.arrays == [ArrayBound(left="0", right="15", array_id=None)]
+    assert mem.arrays == [ArrayBound(left=Expression("0"), right=Expression("15"))]
 
 
 def test_vlnv_parse_raises_clear_error_on_malformed_input():

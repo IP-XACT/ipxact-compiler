@@ -7,6 +7,7 @@ from ipxact import (
     AbstractionPort,
     BusDefinition,
     Direction,
+    Expression,
     Presence,
     Qualifier,
     VLNV,
@@ -21,7 +22,7 @@ def build_apb4_bus_definition() -> BusDefinition:
         vlnv=VLNV("amba.com", "AMBA4", "APB4", "r0p0_0"),
         direct_connection=True,
         is_addressable=True,
-        max_initiators="1",
+        max_initiators=Expression("1"),
     )
 
 
@@ -55,7 +56,7 @@ def test_bus_definition_vlnv_and_topology():
     assert str(bus_def.vlnv) == "amba.com:AMBA4:APB4:r0p0_0"
     assert bus_def.direct_connection is True
     assert bus_def.is_addressable is True
-    assert bus_def.max_initiators == "1"
+    assert bus_def.max_initiators.value == "1"
     assert bus_def.max_targets is None
 
 

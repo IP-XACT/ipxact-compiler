@@ -4,7 +4,19 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
 
-from .common import Expression, ModeRef, Parameter, PartSelect, SubPortReference, VendorExtension
+from .common import (
+    Expression,
+    FieldReference,
+    FileSetRefGroup,
+    LocalReference,
+    ModeRef,
+    Parameter,
+    PartSelect,
+    Range,
+    SubPortReference,
+    TextValue,
+    VendorExtension,
+)
 from .vlnv import VLNVRef
 
 
@@ -22,15 +34,24 @@ class InterfaceMode(str, Enum):
 
 @dataclass
 class PortMap:
-    """ipxact:portMap - maps a bus definition logical port to a component physical port."""
+    """ipxact:portMap - maps a bus definition logical port to a component physical port.
+
+    ``logical_range`` maps only part of the logical port. ``sub_port_refs`` holds the
+    physicalPort's subPort path into a structured physical port.
+    """
 
     logical_port: str
+    logical_range: Optional[Range] = None
     physical_port: Optional[str] = None
     part_select: Optional[PartSelect] = None
     sub_port_refs: list[SubPortReference] = field(default_factory=list)
     logical_tie_off: Optional[Expression] = None
     invert: bool = False
     is_informative: bool = False
+    logical_port_xml_id: Optional[str] = None
+    physical_port_xml_id: Optional[str] = None
+    xml_id: Optional[str] = None
+    vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
 @dataclass
@@ -39,7 +60,8 @@ class AbstractionType:
 
     abstraction_ref: VLNVRef
     port_maps: list[PortMap] = field(default_factory=list)
-    view_refs: list[str] = field(default_factory=list)
+    view_refs: list[TextValue] = field(default_factory=list)
+    xml_id: Optional[str] = None
 
 
 @dataclass
@@ -47,23 +69,22 @@ class TransparentBridge:
     """ipxact:transparentBridge - a target interface bridging transparently to an initiator interface."""
 
     initiator_ref: str
+    xml_id: Optional[str] = None
+    vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
 @dataclass
 class InitiatorInterface:
-    """ipxact:initiator - role-specific content of a busInterface acting as initiator."""
+    """ipxact:initiator - role-specific content of a busInterface acting as initiator.
+
+    ``xml_id`` and ``vendor_extensions`` belong to the addressSpaceRef element.
+    """
 
     address_space_ref: Optional[str] = None
     base_address: Optional[Expression] = None
     mode_refs: list[ModeRef] = field(default_factory=list)
-
-
-@dataclass
-class FileSetRefGroup:
-    """ipxact:fileSetRefGroup - fileSets associated with one function of a target interface."""
-
-    group: Optional[str] = None
-    file_set_refs: list[str] = field(default_factory=list)
+    xml_id: Optional[str] = None
+    vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
 @dataclass
@@ -78,10 +99,11 @@ class TargetInterface:
 
 @dataclass
 class RemapAddress:
-    """ipxact:remapAddress - one mode-selected base address of a mirroredTarget interface."""
+    """ipxact:remapAddresses - one mode-selected base address of a mirroredTarget interface."""
 
     value: Expression
     mode_refs: list[ModeRef] = field(default_factory=list)
+    xml_id: Optional[str] = None
 
 
 @dataclass
@@ -90,6 +112,17 @@ class MirroredTargetInterface:
 
     remap_addresses: list[RemapAddress] = field(default_factory=list)
     range: Optional[Expression] = None
+
+
+@dataclass
+class MirroredInitiatorInterface:
+    """ipxact:mirroredInitiator - has no IP-XACT content, but the schema allows any attributes from
+    other namespaces and any content: child elements are kept as raw XML (like vendor extensions)
+    and text as ``text``."""
+
+    other_attributes: dict[str, str] = field(default_factory=dict)
+    content: list[VendorExtension] = field(default_factory=list)
+    text: Optional[str] = None
 
 
 @dataclass
@@ -111,8 +144,8 @@ class MonitorInterface:
 class BusInterface:
     """ipxact:busInterface - a protocol-typed logical grouping of ports (busInterface.xsd).
 
-    Exactly one of initiator/target/system/mirrored_target/mirrored_system/monitor is set,
-    matching ``mode`` (mirroredInitiator carries no extra content beyond the mode itself).
+    Exactly one of initiator/target/system/mirrored_target/mirrored_initiator/mirrored_system/
+    monitor is set, matching ``mode``.
     """
 
     name: str
@@ -123,6 +156,7 @@ class BusInterface:
     target: Optional[TargetInterface] = None
     system: Optional[SystemInterface] = None
     mirrored_target: Optional[MirroredTargetInterface] = None
+    mirrored_initiator: Optional[MirroredInitiatorInterface] = None
     mirrored_system: Optional[SystemInterface] = None
     monitor: Optional[MonitorInterface] = None
     connection_required: bool = False
@@ -131,31 +165,11 @@ class BusInterface:
     endianness: Optional[str] = None
     parameters: list[Parameter] = field(default_factory=list)
     display_name: Optional[str] = None
+    short_description: Optional[str] = None
     description: Optional[str] = None
+    xml_id: Optional[str] = None
+    other_attributes: dict[str, str] = field(default_factory=dict)
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
-
-
-@dataclass
-class FieldReference:
-    """A pointer into the memory-map hierarchy down to one field.
-
-    Covers both commonStructures.fieldReferenceGroup (used by indirectAddressRef/
-    indirectDataRef and a field's aliasOf, where addressBlockRef/registerRef are optional)
-    and fieldSliceReferenceGroup (used by mode/fieldSlice, where they are required and a
-    trailing bit range is allowed). Python fields are left optional in both cases; nothing
-    at this layer enforces which combination the source element actually requires.
-    """
-
-    field_ref: str
-    register_ref: Optional[str] = None
-    alternate_register_ref: Optional[str] = None
-    register_file_refs: list[str] = field(default_factory=list)
-    address_block_ref: Optional[str] = None
-    bank_refs: list[str] = field(default_factory=list)
-    memory_map_ref: Optional[str] = None
-    memory_remap_ref: Optional[str] = None
-    address_space_ref: Optional[str] = None
-    range: Optional[PartSelect] = None
 
 
 @dataclass
@@ -170,8 +184,11 @@ class IndirectInterface:
     bits_in_lau: Optional[Expression] = None
     endianness: Optional[str] = None
     display_name: Optional[str] = None
+    short_description: Optional[str] = None
     description: Optional[str] = None
     parameters: list[Parameter] = field(default_factory=list)
+    xml_id: Optional[str] = None
+    other_attributes: dict[str, str] = field(default_factory=dict)
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
@@ -180,7 +197,9 @@ class Channel:
     """ipxact:channel - a set of mirrored bus interfaces of this component connected to one another."""
 
     name: str
-    bus_interface_refs: list[str] = field(default_factory=list)
+    bus_interface_refs: list[LocalReference] = field(default_factory=list)
     display_name: Optional[str] = None
+    short_description: Optional[str] = None
     description: Optional[str] = None
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)

@@ -18,19 +18,23 @@ from ..schema.design import (
 from .common_parser import (
     child,
     children,
+    expr,
     parse_assertions,
     parse_children,
     parse_choices,
+    parse_name_group,
     parse_parameters,
     parse_part_select,
     parse_sub_port_references,
-    parse_texts,
     parse_vendor_extensions,
     parse_vlnv,
     parse_vlnv_ref,
     qn,
+    required_expr,
     text,
-    texts,
+    text_value,
+    text_values,
+    xml_id,
 )
 
 
@@ -56,17 +60,17 @@ def parse_design(root: etree._Element) -> Design:
         choices=parse_choices(root),
         parameters=parse_parameters(root),
         assertions=parse_assertions(root),
-        display_name=text(root, "displayName"),
-        short_description=text(root, "shortDescription"),
-        description=text(root, "description"),
+        **parse_name_group(root),
+        xml_id=xml_id(root),
         vendor_extensions=parse_vendor_extensions(root),
     )
 
 
 def _parse_power_domain_link(elem: etree._Element) -> PowerDomainLink:
     return PowerDomainLink(
-        external_power_domain_ref=text(elem, "externalPowerDomainReference") or "",
-        internal_power_domain_refs=texts(elem, "internalPowerDomainReference"),
+        external_power_domain_ref=required_expr(elem, "externalPowerDomainReference"),
+        internal_power_domain_refs=text_values(elem, "internalPowerDomainReference"),
+        xml_id=xml_id(elem),
     )
 
 
@@ -75,9 +79,8 @@ def _parse_component_instance(elem: etree._Element) -> ComponentInstance:
         instance_name=text(elem, "instanceName") or "",
         component_ref=parse_vlnv_ref(child(elem, "componentRef")),
         power_domain_links=parse_children(elem, "powerDomainLinks", "powerDomainLink", _parse_power_domain_link),
-        display_name=text(elem, "displayName"),
-        short_description=text(elem, "shortDescription"),
-        description=text(elem, "description"),
+        **parse_name_group(elem),
+        xml_id=xml_id(elem),
         vendor_extensions=parse_vendor_extensions(elem),
     )
 
@@ -88,6 +91,7 @@ def _parse_internal_port_reference(elem: etree._Element) -> InternalPortReferenc
         port_ref=elem.get("portRef", ""),
         sub_port_refs=parse_sub_port_references(elem),
         part_select=parse_part_select(elem),
+        xml_id=xml_id(elem),
         vendor_extensions=parse_vendor_extensions(elem),
     )
 
@@ -97,6 +101,7 @@ def _parse_external_port_reference(elem: etree._Element) -> ExternalPortReferenc
         port_ref=elem.get("portRef", ""),
         sub_port_refs=parse_sub_port_references(elem),
         part_select=parse_part_select(elem),
+        xml_id=xml_id(elem),
         vendor_extensions=parse_vendor_extensions(elem),
     )
 
@@ -110,10 +115,9 @@ def _parse_ad_hoc_connection(elem: etree._Element) -> AdHocConnection:
         external_port_references=parse_children(
             elem, "portReferences", "externalPortReference", _parse_external_port_reference
         ),
-        tied_value=text(elem, "tiedValue"),
-        display_name=text(elem, "displayName"),
-        short_description=text(elem, "shortDescription"),
-        description=text(elem, "description"),
+        tied_value=expr(elem, "tiedValue"),
+        **parse_name_group(elem),
+        xml_id=xml_id(elem),
         vendor_extensions=parse_vendor_extensions(elem),
     )
 
@@ -122,8 +126,9 @@ def _parse_active_interface(elem: etree._Element) -> ActiveInterface:
     return ActiveInterface(
         component_instance_ref=elem.get("componentInstanceRef", ""),
         bus_ref=elem.get("busRef", ""),
-        exclude_ports=parse_texts(elem, "excludePorts", "excludePort"),
+        exclude_ports=parse_children(elem, "excludePorts", "excludePort", text_value),
         description=text(elem, "description"),
+        xml_id=xml_id(elem),
         vendor_extensions=parse_vendor_extensions(elem),
     )
 
@@ -132,6 +137,7 @@ def _parse_hier_interface(elem: etree._Element) -> HierInterface:
     return HierInterface(
         bus_ref=elem.get("busRef", ""),
         description=text(elem, "description"),
+        xml_id=xml_id(elem),
         vendor_extensions=parse_vendor_extensions(elem),
     )
 
@@ -148,9 +154,8 @@ def _parse_interconnection(elem: etree._Element) -> Interconnection:
         active_interface=active_interface,
         other_active_interfaces=[_parse_active_interface(e) for e in active_interface_elems[1:]],
         hier_interfaces=[_parse_hier_interface(e) for e in children(elem, "hierInterface")],
-        display_name=text(elem, "displayName"),
-        short_description=text(elem, "shortDescription"),
-        description=text(elem, "description"),
+        **parse_name_group(elem),
+        xml_id=xml_id(elem),
         vendor_extensions=parse_vendor_extensions(elem),
     )
 
@@ -161,6 +166,7 @@ def _parse_monitor_interface_ref(elem: etree._Element) -> MonitorInterfaceRef:
         bus_ref=elem.get("busRef", ""),
         path=elem.get("path"),
         description=text(elem, "description"),
+        xml_id=xml_id(elem),
         vendor_extensions=parse_vendor_extensions(elem),
     )
 
@@ -176,8 +182,7 @@ def _parse_monitor_interconnection(elem: etree._Element) -> MonitorInterconnecti
         name=text(elem, "name") or "",
         monitored_active_interface=monitored_active_interface,
         monitor_interfaces=[_parse_monitor_interface_ref(e) for e in children(elem, "monitorInterface")],
-        display_name=text(elem, "displayName"),
-        short_description=text(elem, "shortDescription"),
-        description=text(elem, "description"),
+        **parse_name_group(elem),
+        xml_id=xml_id(elem),
         vendor_extensions=parse_vendor_extensions(elem),
     )

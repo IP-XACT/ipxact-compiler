@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Uses the parts of componentType that apb_uart.xml does not: expression bounds and foreign
+     attributes, xml:id, typeDefinitions references, access handles, HDL type bindings, power
+     constraints, file/fileSet details, executable images. -->
+<ipxact:component xmlns:ipxact="http://www.accellera.org/XMLSchema/IPXACT/1685-2022"
+                  xmlns:acme="http://acme.example/ipxact" xml:id="comp">
+  <ipxact:vendor>example.org</ipxact:vendor>
+  <ipxact:library>ip</ipxact:library>
+  <ipxact:name>full</ipxact:name>
+  <ipxact:version>1.0</ipxact:version>
+
+  <ipxact:typeDefinitions>
+    <ipxact:externalTypeDefinitions>
+      <ipxact:name>regdefs</ipxact:name>
+      <ipxact:typeDefinitionsRef vendor="example.org" library="defs" name="regdefs" version="1.0"/>
+      <ipxact:viewLinks>
+        <ipxact:viewLink>
+          <ipxact:externalViewReference viewRef="ext_rtl"/>
+          <ipxact:viewReference viewRef="rtl"/>
+        </ipxact:viewLink>
+      </ipxact:viewLinks>
+      <ipxact:modeLinks>
+        <ipxact:modeLink>
+          <ipxact:externalModeReference modeRef="ext_normal"/>
+          <ipxact:modeReference modeRef="normal"/>
+        </ipxact:modeLink>
+      </ipxact:modeLinks>
+      <ipxact:resetTypeLinks>
+        <ipxact:resetTypeLink>
+          <ipxact:externalResetTypeReference resetTypeRef="ext_soft"/>
+          <ipxact:resetTypeReference resetTypeRef="soft"/>
+        </ipxact:resetTypeLink>
+      </ipxact:resetTypeLinks>
+    </ipxact:externalTypeDefinitions>
+  </ipxact:typeDefinitions>
+
+  <ipxact:powerDomains>
+    <ipxact:powerDomain>
+      <ipxact:name>pd_core</ipxact:name>
+    </ipxact:powerDomain>
+  </ipxact:powerDomains>
+
+  <ipxact:busInterfaces>
+    <ipxact:busInterface xml:id="bi_apb" acme:priority="high">
+      <ipxact:name>apb</ipxact:name>
+      <ipxact:shortDescription>APB target</ipxact:shortDescription>
+      <ipxact:busType vendor="amba.com" library="AMBA4" name="APB4" version="r0p0_0"/>
+      <ipxact:abstractionTypes>
+        <ipxact:abstractionType>
+          <ipxact:viewRef xml:id="vr_abs">rtl</ipxact:viewRef>
+          <ipxact:abstractionRef vendor="amba.com" library="AMBA4" name="APB4_rtl" version="r0p0_0"/>
+          <ipxact:portMaps>
+            <ipxact:portMap>
+              <ipxact:logicalPort xml:id="lp_paddr">
+                <ipxact:name>PADDR</ipxact:name>
+                <ipxact:range>
+                  <ipxact:left>11</ipxact:left>
+                  <ipxact:right>0</ipxact:right>
+                </ipxact:range>
+              </ipxact:logicalPort>
+              <ipxact:physicalPort>
+                <ipxact:name>paddr</ipxact:name>
+              </ipxact:physicalPort>
+            </ipxact:portMap>
+          </ipxact:portMaps>
+        </ipxact:abstractionType>
+      </ipxact:abstractionTypes>
+      <ipxact:target>
+        <ipxact:memoryMapRef memoryMapRef="mm"/>
+      </ipxact:target>
+      <ipxact:bitsInLau minimum="8" maximum="32" acme:unit="bits">8</ipxact:bitsInLau>
+    </ipxact:busInterface>
+    <ipxact:busInterface>
+      <ipxact:name>mon</ipxact:name>
+      <ipxact:busType vendor="amba.com" library="AMBA4" name="APB4" version="r0p0_0"/>
+      <ipxact:mirroredInitiator acme:role="snoop">snoop only</ipxact:mirroredInitiator>
+    </ipxact:busInterface>
+  </ipxact:busInterfaces>
+
+  <ipxact:modes>
+    <ipxact:mode>
+      <ipxact:name>normal</ipxact:name>
+      <ipxact:fieldSlice xml:id="fs_chan3">
+        <ipxact:name>chan3_val</ipxact:name>
+        <ipxact:memoryMapRef memoryMapRef="mm"/>
+        <ipxact:addressBlockRef addressBlockRef="chan">
+          <ipxact:indices>
+            <ipxact:index>3</ipxact:index>
+          </ipxact:indices>
+        </ipxact:addressBlockRef>
+        <ipxact:registerRef registerRef="DATA"/>
+        <ipxact:fieldRef fieldRef="VAL"/>
+      </ipxact:fieldSlice>
+    </ipxact:mode>
+  </ipxact:modes>
+
+  <ipxact:memoryMaps>
+    <ipxact:memoryMap>
+      <ipxact:name>mm</ipxact:name>
+      <ipxact:addressBlock>
+        <ipxact:name>chan</ipxact:name>
+        <ipxact:accessHandles>
+          <ipxact:accessHandle force="false">
+            <ipxact:viewRef>rtl</ipxact:viewRef>
+            <ipxact:slices xml:id="sl_chan">
+              <ipxact:slice>
+                <ipxact:pathSegments>
+                  <ipxact:pathSegment>u_chan</ipxact:pathSegment>
+                </ipxact:pathSegments>
+              </ipxact:slice>
+            </ipxact:slices>
+          </ipxact:accessHandle>
+        </ipxact:accessHandles>
+        <ipxact:array>
+          <ipxact:dim indexVar="i">4</ipxact:dim>
+          <ipxact:stride>0x100</ipxact:stride>
+        </ipxact:array>
+        <ipxact:baseAddress>0x0</ipxact:baseAddress>
+        <ipxact:typeIdentifier>chan_t</ipxact:typeIdentifier>
+        <ipxact:range>0x100</ipxact:range>
+        <ipxact:width>32</ipxact:width>
+        <ipxact:register>
+          <ipxact:name>DATA</ipxact:name>
+          <ipxact:shortDescription>channel data</ipxact:shortDescription>
+          <ipxact:accessHandles>
+            <ipxact:accessHandle>
+              <ipxact:pathSegments>
+                <ipxact:pathSegment>u_regs</ipxact:pathSegment>
+                <ipxact:pathSegment>data_q</ipxact:pathSegment>
+              </ipxact:pathSegments>
+            </ipxact:accessHandle>
+          </ipxact:accessHandles>
+          <ipxact:addressOffset>0x0</ipxact:addressOffset>
+          <ipxact:size>32</ipxact:size>
+          <ipxact:field>
+            <ipxact:name>VAL</ipxact:name>
+            <ipxact:bitOffset>0</ipxact:bitOffset>
+            <ipxact:bitWidth>16</ipxact:bitWidth>
+            <ipxact:fieldAccessPolicies xml:id="fap_val">
+              <ipxact:fieldAccessPolicy>
+                <ipxact:access>read-write</ipxact:access>
+                <ipxact:readAction modify="pop_fifo">modify</ipxact:readAction>
+                <ipxact:broadcasts>
+                  <ipxact:broadcastTo xml:id="bc_shadow">
+                    <ipxact:addressBlockRef addressBlockRef="chan"/>
+                    <ipxact:registerRef registerRef="SHADOW"/>
+                    <ipxact:fieldRef fieldRef="VAL"/>
+                  </ipxact:broadcastTo>
+                </ipxact:broadcasts>
+              </ipxact:fieldAccessPolicy>
+            </ipxact:fieldAccessPolicies>
+            <ipxact:enumeratedValues>
+              <ipxact:enumerationDefinitionRef typeDefinitions="regdefs">val_enum</ipxact:enumerationDefinitionRef>
+            </ipxact:enumeratedValues>
+          </ipxact:field>
+          <ipxact:field>
+            <ipxact:name>VAL_HI</ipxact:name>
+            <ipxact:bitOffset>16</ipxact:bitOffset>
+            <ipxact:aliasOf>
+              <ipxact:addressBlockRef addressBlockRef="chan"/>
+              <ipxact:registerRef registerRef="SHADOW"/>
+              <ipxact:fieldRef fieldRef="VAL"/>
+            </ipxact:aliasOf>
+          </ipxact:field>
+        </ipxact:register>
+        <ipxact:register>
+          <ipxact:name>SHADOW</ipxact:name>
+          <ipxact:addressOffset>0x4</ipxact:addressOffset>
+          <ipxact:registerDefinitionRef typeDefinitions="regdefs">shadow_reg</ipxact:registerDefinitionRef>
+        </ipxact:register>
+      </ipxact:addressBlock>
+    </ipxact:memoryMap>
+  </ipxact:memoryMaps>
+
+  <ipxact:model>
+    <ipxact:views>
+      <ipxact:view>
+        <ipxact:name>rtl</ipxact:name>
+        <ipxact:displayName>RTL view</ipxact:displayName>
+        <ipxact:description>Synthesizable RTL</ipxact:description>
+        <ipxact:envIdentifier xml:id="env_sv">:modelsim.mentor.com:</ipxact:envIdentifier>
+        <ipxact:componentInstantiationRef>rtl_impl</ipxact:componentInstantiationRef>
+      </ipxact:view>
+    </ipxact:views>
+    <ipxact:instantiations>
+      <ipxact:componentInstantiation>
+        <ipxact:name>rtl_impl</ipxact:name>
+        <ipxact:language strict="true">systemverilog</ipxact:language>
+        <ipxact:moduleName>full</ipxact:moduleName>
+        <ipxact:fileSetRef xml:id="fsr_rtl">
+          <ipxact:localName>rtl_files</ipxact:localName>
+        </ipxact:fileSetRef>
+        <ipxact:clearboxElementRefs>
+          <ipxact:clearboxElementRef name="cb_state">
+            <ipxact:location>
+              <ipxact:slice>
+                <ipxact:pathSegments>
+                  <ipxact:pathSegment>u_fsm</ipxact:pathSegment>
+                  <ipxact:pathSegment>state_q</ipxact:pathSegment>
+                </ipxact:pathSegments>
+              </ipxact:slice>
+            </ipxact:location>
+          </ipxact:clearboxElementRef>
+        </ipxact:clearboxElementRefs>
+      </ipxact:componentInstantiation>
+    </ipxact:instantiations>
+    <ipxact:ports>
+      <ipxact:port>
+        <ipxact:name>paddr</ipxact:name>
+        <ipxact:wire>
+          <ipxact:direction>in</ipxact:direction>
+          <ipxact:vectors>
+            <ipxact:vector>
+              <ipxact:left>11</ipxact:left>
+              <ipxact:right>0</ipxact:right>
+            </ipxact:vector>
+          </ipxact:vectors>
+          <ipxact:wireTypeDefs>
+            <ipxact:wireTypeDef>
+              <ipxact:typeName constrained="length">std_logic_vector</ipxact:typeName>
+              <ipxact:typeDefinition>IEEE.std_logic_1164.all</ipxact:typeDefinition>
+              <ipxact:viewRef>rtl</ipxact:viewRef>
+            </ipxact:wireTypeDef>
+          </ipxact:wireTypeDefs>
+          <ipxact:signalTypeDefs>
+            <ipxact:signalTypeDef>
+              <ipxact:signalType>digital</ipxact:signalType>
+            </ipxact:signalTypeDef>
+          </ipxact:signalTypeDefs>
+          <ipxact:constraintSets>
+            <ipxact:constraintSet>
+              <ipxact:driveConstraint>
+                <ipxact:cellSpecification>
+                  <ipxact:cellFunction other="nor3">other</ipxact:cellFunction>
+                </ipxact:cellSpecification>
+              </ipxact:driveConstraint>
+            </ipxact:constraintSet>
+          </ipxact:constraintSets>
+          <ipxact:powerConstraints>
+            <ipxact:powerConstraint>
+              <ipxact:powerDomainRef>pd_core</ipxact:powerDomainRef>
+              <ipxact:range>
+                <ipxact:left>7</ipxact:left>
+                <ipxact:right>0</ipxact:right>
+              </ipxact:range>
+            </ipxact:powerConstraint>
+          </ipxact:powerConstraints>
+        </ipxact:wire>
+        <ipxact:access>
+          <ipxact:portAccessType>ref</ipxact:portAccessType>
+          <ipxact:accessHandles>
+            <ipxact:accessHandle>
+              <ipxact:slices>
+                <ipxact:slice>
+                  <ipxact:pathSegments>
+                    <ipxact:pathSegment>paddr_i</ipxact:pathSegment>
+                  </ipxact:pathSegments>
+                </ipxact:slice>
+              </ipxact:slices>
+            </ipxact:accessHandle>
+          </ipxact:accessHandles>
+        </ipxact:access>
+      </ipxact:port>
+      <ipxact:port>
+        <ipxact:name>sock</ipxact:name>
+        <ipxact:transactional>
+          <ipxact:initiative>provides</ipxact:initiative>
+          <ipxact:kind custom="my_socket">custom</ipxact:kind>
+          <ipxact:transTypeDefs>
+            <ipxact:transTypeDef>
+              <ipxact:typeName exact="false">tlm_target_socket</ipxact:typeName>
+              <ipxact:typeParameters>
+                <ipxact:serviceTypeDef>
+                  <ipxact:typeName implicit="true">tlm_fw_transport_if</ipxact:typeName>
+                </ipxact:serviceTypeDef>
+              </ipxact:typeParameters>
+            </ipxact:transTypeDef>
+          </ipxact:transTypeDefs>
+        </ipxact:transactional>
+      </ipxact:port>
+    </ipxact:ports>
+  </ipxact:model>
+
+  <ipxact:fileSets>
+    <ipxact:fileSet>
+      <ipxact:name>rtl_files</ipxact:name>
+      <ipxact:file fileId="f_lib" acme:origin="vendor">
+        <ipxact:name>lib/cells.lib</ipxact:name>
+        <ipxact:fileType libext="lib" user="libertyLibrary">user</ipxact:fileType>
+        <ipxact:logicalName default="true">cells</ipxact:logicalName>
+        <ipxact:buildCommand>
+          <ipxact:command>lc_shell</ipxact:command>
+          <ipxact:flags append="true">-f</ipxact:flags>
+          <ipxact:replaceDefaultFlags>0</ipxact:replaceDefaultFlags>
+          <ipxact:targetName>cells.db</ipxact:targetName>
+        </ipxact:buildCommand>
+        <ipxact:define>
+          <ipxact:name>SIM</ipxact:name>
+          <ipxact:value>1</ipxact:value>
+        </ipxact:define>
+        <ipxact:imageType>liberty</ipxact:imageType>
+        <ipxact:description>standard cells</ipxact:description>
+      </ipxact:file>
+      <ipxact:function replicate="true">
+        <ipxact:entryPoint>init_chan</ipxact:entryPoint>
+        <ipxact:fileRef>f_lib</ipxact:fileRef>
+        <ipxact:returnType>int</ipxact:returnType>
+        <ipxact:argument dataType="unsigned int">
+          <ipxact:name>chan</ipxact:name>
+          <ipxact:value>3</ipxact:value>
+        </ipxact:argument>
+        <ipxact:sourceFile>
+          <ipxact:sourceName>sw/init.c</ipxact:sourceName>
+          <ipxact:fileType>cSource</ipxact:fileType>
+        </ipxact:sourceFile>
+      </ipxact:function>
+    </ipxact:fileSet>
+  </ipxact:fileSets>
+
+  <ipxact:clearboxElements>
+    <ipxact:clearboxElement>
+      <ipxact:name>cb_state</ipxact:name>
+      <ipxact:clearboxType>signal</ipxact:clearboxType>
+    </ipxact:clearboxElement>
+  </ipxact:clearboxElements>
+
+  <ipxact:cpus>
+    <ipxact:cpu>
+      <ipxact:name>core</ipxact:name>
+      <ipxact:range>0x10000</ipxact:range>
+      <ipxact:width>32</ipxact:width>
+      <ipxact:executableImage imageId="boot" imageType="elf">
+        <ipxact:name>bootloader</ipxact:name>
+        <ipxact:languageTools>
+          <ipxact:fileBuilder>
+            <ipxact:fileType>cSource</ipxact:fileType>
+            <ipxact:command>gcc</ipxact:command>
+          </ipxact:fileBuilder>
+          <ipxact:linker>ld</ipxact:linker>
+          <ipxact:linkerFlags>-nostdlib</ipxact:linkerFlags>
+          <ipxact:linkerCommandFile>
+            <ipxact:name>boot.ld</ipxact:name>
+            <ipxact:commandLineSwitch>-T</ipxact:commandLineSwitch>
+            <ipxact:enable>1</ipxact:enable>
+          </ipxact:linkerCommandFile>
+        </ipxact:languageTools>
+        <ipxact:fileSetRefGroup>
+          <ipxact:fileSetRef>
+            <ipxact:localName>rtl_files</ipxact:localName>
+          </ipxact:fileSetRef>
+        </ipxact:fileSetRefGroup>
+      </ipxact:executableImage>
+      <ipxact:memoryMapRef>mm</ipxact:memoryMapRef>
+    </ipxact:cpu>
+  </ipxact:cpus>
+
+  <ipxact:resetTypes>
+    <ipxact:resetType>
+      <ipxact:name>soft</ipxact:name>
+    </ipxact:resetType>
+  </ipxact:resetTypes>
+
+  <ipxact:vendorExtensions>
+    <acme:owner>team-a</acme:owner>
+  </ipxact:vendorExtensions>
+</ipxact:component>

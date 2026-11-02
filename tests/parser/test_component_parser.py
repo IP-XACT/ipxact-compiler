@@ -6,7 +6,8 @@ from pathlib import Path
 
 from lxml import etree
 
-from ipxact.parser.component_parser import _parse_bank, _parse_field_access_policy, _parse_memory_array
+from ipxact.parser.common_parser import parse_memory_array
+from ipxact.parser.component_parser import _parse_bank, _parse_field_access_policy
 from ipxact.parser.main_parser import parse_element, parse_file
 from ipxact.schema.businterface import InterfaceMode
 from ipxact.schema.memorymap import AddressBlock
@@ -33,7 +34,7 @@ def test_bus_interface_target_mode():
     assert apb.target.memory_map_ref == "apb_uart_mm"
     assert len(apb.target.mode_refs) == 1
     assert apb.target.mode_refs[0].name == "default"
-    assert apb.target.mode_refs[0].priority == 0
+    assert apb.target.mode_refs[0].priority is None
 
 
 def test_component_modes():
@@ -48,7 +49,7 @@ def test_bus_interface_bit_steering_defaults_to_zero():
     """
     component = parse_file(FIXTURE)
     apb = component.bus_interfaces[0]
-    assert apb.bit_steering == "0"
+    assert apb.bit_steering.value == "0"
 
 
 def test_field_access_policy_test_constraint_defaults_to_unconstrained():
@@ -75,19 +76,19 @@ def test_memory_map_address_block_and_register():
     component = parse_file(FIXTURE)
     block = component.memory_maps[0].items[0]
     assert isinstance(block, AddressBlock)
-    assert block.base_address == "0x0"
-    assert block.range == "0x100"
-    assert block.width == "32"
+    assert block.base_address.value == "0x0"
+    assert block.range.value == "0x100"
+    assert block.width.value == "32"
 
     register = block.registers[0]
     assert register.name == "CTRL"
-    assert register.address_offset == "0x0"
-    assert register.size == "32"
+    assert register.address_offset.value == "0x0"
+    assert register.size.value == "32"
 
     field = register.fields[0]
     assert field.name == "ENABLE"
-    assert field.bit_offset == "0"
-    assert field.bit_width == "1"
+    assert field.bit_offset.value == "0"
+    assert field.bit_width.value == "1"
 
 
 def test_bank_base_address():
@@ -111,7 +112,7 @@ def test_bank_base_address():
         "</ipxact:bank>"
     )
     outer = _parse_bank(elem)
-    assert outer.base_address == "0x1000"
+    assert outer.base_address.value == "0x1000"
 
     inner = outer.items[0]
     assert inner.base_address is None
@@ -125,9 +126,9 @@ def test_memory_array_stride():
             f"<ipxact:{tag}>4</ipxact:{tag}>"
             "</ipxact:array>"
         )
-        array = _parse_memory_array(elem)
-        assert array.dims[0].size == "8"
-        assert array.stride == "4"
+        array = parse_memory_array(elem)
+        assert array.dims[0].size.value == "8"
+        assert array.stride.value == "4"
 
 
 def test_model_ports():
@@ -140,7 +141,7 @@ def test_parameters():
     component = parse_file(FIXTURE)
     baud_rate = component.parameters[0]
     assert baud_rate.name == "BAUD_RATE"
-    assert baud_rate.value == "115200"
+    assert baud_rate.value.value == "115200"
     assert baud_rate.parameter_id == "BAUD_RATE"
 
 
@@ -173,9 +174,9 @@ def test_comments_do_not_disturb_memory_map():
     """Covers comments nested three levels deep (addressBlock -> register -> field)."""
     component = parse_file(COMMENT_FIXTURE)
     block = component.memory_maps[0].items[0]
-    assert block.base_address == "0x0"
+    assert block.base_address.value == "0x0"
     field = block.registers[0].fields[0]
-    assert field.bit_width == "1"
+    assert field.bit_width.value == "1"
 
 
 def test_comments_do_not_disturb_ports_or_parameters():
@@ -185,7 +186,7 @@ def test_comments_do_not_disturb_ports_or_parameters():
     component = parse_file(COMMENT_FIXTURE)
     ports_by_name = {p.name: p.wire.direction for p in component.model.ports}
     assert ports_by_name == {"clk": Direction.IN, "rst_n": Direction.IN, "wdata": Direction.OUT}
-    assert component.parameters[0].value == "115200"
+    assert component.parameters[0].value.value == "115200"
 
 
 def test_parse_element_with_comments_matches_parse_file():

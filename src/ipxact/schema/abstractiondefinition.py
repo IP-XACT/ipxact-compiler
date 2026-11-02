@@ -52,6 +52,7 @@ class WireSystemConstraints:
 
     group: str
     constraints: WireModeConstraints
+    xml_id: Optional[str] = None
 
 
 @dataclass
@@ -73,6 +74,7 @@ class TransactionalModeConstraints:
     presence: Presence = Presence.OPTIONAL
     initiative: Optional[str] = None  # requires/provides/both
     kind: Optional[str] = None
+    kind_custom: Optional[str] = None  # names the kind when kind is "custom"
     bus_width: Optional[Expression] = None
     protocol: Optional[Protocol] = None
 
@@ -83,6 +85,7 @@ class TransactionalSystemConstraints:
 
     group: str
     constraints: TransactionalModeConstraints
+    xml_id: Optional[str] = None
 
 
 @dataclass
@@ -96,19 +99,48 @@ class TransactionalAbstractionPort:
 
 
 @dataclass
-class AbstractionPort:
-    """ipxact:port (within abstractionDefinition/ports) - one logical port of the bus.
+class PacketField:
+    """ipxact:packetField - one field of a packet carried by a logical port."""
 
-    ``ipxact:packets`` (PSS packet framing) is out of scope, same rationale as elsewhere.
-    """
+    name: str
+    width: Expression
+    value: Optional[Expression] = None
+    endianness: Optional[str] = None  # big/little
+    qualifier: Optional[Qualifier] = None
+    display_name: Optional[str] = None
+    short_description: Optional[str] = None
+    description: Optional[str] = None
+    xml_id: Optional[str] = None
+    vendor_extensions: list[VendorExtension] = field(default_factory=list)
+
+
+@dataclass
+class Packet:
+    """ipxact:packet - a packet (a sequence of fields) carried by a logical port."""
+
+    name: str
+    packet_fields: list[PacketField] = field(default_factory=list)
+    endianness: Optional[str] = None  # big/little
+    display_name: Optional[str] = None
+    short_description: Optional[str] = None
+    description: Optional[str] = None
+    xml_id: Optional[str] = None
+    vendor_extensions: list[VendorExtension] = field(default_factory=list)
+
+
+@dataclass
+class AbstractionPort:
+    """ipxact:port (within abstractionDefinition/ports) - one logical port of the bus."""
 
     logical_name: str
     wire: Optional[WireAbstractionPort] = None
     transactional: Optional[TransactionalAbstractionPort] = None
+    packets: list[Packet] = field(default_factory=list)
     match: bool = False
     display_name: Optional[str] = None
     short_description: Optional[str] = None
     description: Optional[str] = None
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)
 
 
@@ -126,4 +158,5 @@ class AbstractionDefinition:
     display_name: Optional[str] = None
     short_description: Optional[str] = None
     description: Optional[str] = None
+    xml_id: Optional[str] = None
     vendor_extensions: list[VendorExtension] = field(default_factory=list)

@@ -6,6 +6,7 @@ designconfig_parser end to end.
 from pathlib import Path
 
 from ipxact.parser.main_parser import parse_file
+from ipxact.schema.common import Expression
 
 FIXTURE = Path(__file__).parent / "xml" / "top_design_config.xml"
 
@@ -37,7 +38,7 @@ def test_view_configurations():
 
     cpu_view = by_instance["cpu"]
     assert cpu_view.view_ref == "rtl"
-    assert cpu_view.configurable_element_values == {"ICACHE_ECC": "1"}
+    assert cpu_view.configurable_element_values == {"ICACHE_ECC": Expression("1")}
 
     uart_view = by_instance["uart0"]
     assert uart_view.view_ref == "rtl"
