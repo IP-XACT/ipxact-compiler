@@ -6,7 +6,7 @@ from pathlib import Path
 
 from lxml import etree
 
-from ipxact.parser.component_parser import _parse_bank, _parse_field_access_policy
+from ipxact.parser.component_parser import _parse_bank, _parse_field_access_policy, _parse_memory_array
 from ipxact.parser.main_parser import parse_file
 from ipxact.schema.businterface import InterfaceMode
 from ipxact.schema.memorymap import AddressBlock
@@ -115,6 +115,19 @@ def test_bank_base_address():
 
     inner = outer.items[0]
     assert inner.base_address is None
+
+
+def test_memory_array_stride():
+    for tag in ("stride", "bitStride"):
+        elem = etree.fromstring(
+            f'<ipxact:array xmlns:ipxact="{NS}">'
+            "<ipxact:dim>8</ipxact:dim>"
+            f"<ipxact:{tag}>4</ipxact:{tag}>"
+            "</ipxact:array>"
+        )
+        array = _parse_memory_array(elem)
+        assert array.dims[0].size == "8"
+        assert array.stride == "4"
 
 
 def test_model_ports():

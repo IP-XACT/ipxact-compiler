@@ -406,7 +406,10 @@ def _parse_memory_array(elem: Optional[etree._Element]) -> Optional[MemoryArray]
     if elem is None:
         return None
     dims = [ArrayDim(size=elem_text(d) or "", index_var=d.get("indexVar")) for d in children(elem, "dim")]
-    stride_elem = child(elem, "stride") or child(elem, "bitStride")
+    # An lxml element with no children is falsy, so `or` can't pick between the two.
+    stride_elem = child(elem, "stride")
+    if stride_elem is None:
+        stride_elem = child(elem, "bitStride")
     return MemoryArray(dims=dims, stride=elem_text(stride_elem))
 
 
