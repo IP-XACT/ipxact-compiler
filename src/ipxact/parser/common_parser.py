@@ -298,6 +298,7 @@ def parse_file(elem: etree._Element) -> File:
         exported_names=texts(elem, "exportedName"),
         build_command=text(build_command, "command") if build_command is not None else None,
         build_flags=text(build_command, "flags") if build_command is not None else None,
+        dependencies=texts(elem, "dependency"),
         vendor_extensions=parse_vendor_extensions(elem),
     )
 

@@ -8,6 +8,7 @@ Presence(...), ...) and raise ValueError on otherwise-valid input.
 from lxml import etree
 
 from ipxact.parser.common_parser import elem_text, text, texts
+from ipxact.parser.common_parser import parse_file as parse_file_element
 
 NS = "http://www.accellera.org/XMLSchema/IPXACT/1685-2022"
 
@@ -36,3 +37,16 @@ def test_texts_helper_strips_each_item():
         "<ipxact:systemGroupName>trace</ipxact:systemGroupName>"
     )
     assert texts(root, "systemGroupName") == ["debug", "trace"]
+
+
+def test_file_dependencies():
+    root = _parse(
+        "<ipxact:file>"
+        "<ipxact:name>gen/regs.py</ipxact:name>"
+        "<ipxact:fileType>pythonSource</ipxact:fileType>"
+        "<ipxact:dependency>gen</ipxact:dependency>"
+        "<ipxact:dependency>lib</ipxact:dependency>"
+        "</ipxact:file>"
+    )
+    file = parse_file_element(root.find(f"{{{NS}}}file"))
+    assert file.dependencies == ["gen", "lib"]
