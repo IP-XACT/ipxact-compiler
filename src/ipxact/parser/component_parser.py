@@ -443,8 +443,8 @@ def _parse_write_value_constraint(elem: etree._Element) -> Optional[WriteValueCo
     write_as_read_elem = child(container, "writeAsRead")
     use_enumerated_elem = child(container, "useEnumeratedValues")
     return WriteValueConstraint(
-        write_as_read=as_bool(write_as_read_elem.text) if write_as_read_elem is not None else None,
-        use_enumerated_values=as_bool(use_enumerated_elem.text) if use_enumerated_elem is not None else None,
+        write_as_read=as_bool(elem_text(write_as_read_elem)) if write_as_read_elem is not None else None,
+        use_enumerated_values=as_bool(elem_text(use_enumerated_elem)) if use_enumerated_elem is not None else None,
         minimum=text(container, "minimum"),
         maximum=text(container, "maximum"),
     )

@@ -65,7 +65,7 @@ def _parse_port_constraints(elem: etree._Element) -> PortConstraints:
 
 
 def _parse_requires_driver(elem: etree._Element) -> RequiresDriver:
-    return RequiresDriver(value=as_bool(elem.text, False), driver_type=elem.get("driverType", "any"))
+    return RequiresDriver(value=as_bool(elem_text(elem), False), driver_type=elem.get("driverType", "any"))
 
 
 def _parse_wire_mode_constraints(elem: etree._Element) -> WireModeConstraints:

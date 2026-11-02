@@ -7,7 +7,7 @@ from pathlib import Path
 from lxml import etree
 
 from ipxact.parser.component_parser import _parse_bank, _parse_field_access_policy, _parse_memory_array
-from ipxact.parser.main_parser import parse_file
+from ipxact.parser.main_parser import parse_element, parse_file
 from ipxact.schema.businterface import InterfaceMode
 from ipxact.schema.memorymap import AddressBlock
 from ipxact.schema.memorymap import TestConstraint as FieldTestConstraint
@@ -186,3 +186,24 @@ def test_comments_do_not_disturb_ports_or_parameters():
     ports_by_name = {p.name: p.wire.direction for p in component.model.ports}
     assert ports_by_name == {"clk": Direction.IN, "rst_n": Direction.IN, "wdata": Direction.OUT}
     assert component.parameters[0].value == "115200"
+
+
+def test_parse_element_with_comments_matches_parse_file():
+    """parse_element() is public, so its caller may load the tree with
+    a default lxml parser that keeps comments. Values after a comment must still be read.
+    """
+    from_tree = parse_element(etree.parse(str(COMMENT_FIXTURE)).getroot())
+    assert from_tree == parse_file(COMMENT_FIXTURE)
+    assert str(from_tree.vlnv) == "example.org:ip:apb_uart:1.0"
+
+
+def test_processing_instruction_does_not_disturb_value(tmp_path):
+    """remove_comments does not remove processing instructions, which
+    split an element's text the same way a comment does.
+    """
+    source = FIXTURE.read_text().replace(
+        "<ipxact:vendor>example.org", "<ipxact:vendor><?editor note?>example.org"
+    )
+    path = tmp_path / "with_pi.xml"
+    path.write_text(source)
+    assert str(parse_file(path).vlnv) == "example.org:ip:apb_uart:1.0"

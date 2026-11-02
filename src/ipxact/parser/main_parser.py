@@ -27,9 +27,9 @@ _XML_PARSER = etree.XMLParser(remove_comments=True)
 def parse_file(path: Union[str, Path]):
     """Parse an IP-XACT XML file, dispatching on its root element to the matching parser.
 
-    Comments are stripped during parsing.. If left in place, it pushes a following value onto
-    the comment's ``.tail`` instead of the parent's ``.text``,
-    so field's default value with no error, which is a problem.
+    Comments are stripped during parsing so they don't end up in the raw vendorExtensions
+    strings. Text values are read the same way with or without comments (see elem_text), so
+    parse_element() also works on a tree loaded with a default parser.
     """
     root = etree.parse(str(path), parser=_XML_PARSER).getroot()
     return parse_element(root)

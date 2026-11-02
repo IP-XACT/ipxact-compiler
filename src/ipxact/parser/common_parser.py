@@ -76,16 +76,20 @@ def parse_texts(elem: etree._Element, container_tag: str, item_tag: str) -> list
 
 
 def elem_text(elem: Optional[etree._Element]) -> Optional[str]:
-    """Strip an already-located element's text content, or None if absent/empty.
+    """Return an element's text content, stripped, or None if the element is missing or has no text.
 
-    lxml returns element text verbatim, including any indentation whitespace a
-    pretty-printed or hand-edited file wraps around it (e.g. "\\n  required\\n").
-    Left unstripped, that whitespace flows into enum construction (Direction(...),
-    Presence(...), ...) and raises ValueError on otherwise-valid input.
+    All direct text nodes are joined, not just ``elem.text``, because a comment or processing
+    instruction splits the text and pushes the rest onto that node's ``.tail``
+    (``<vendor><!-- x -->acme</vendor>`` has ``elem.text`` None). The result is stripped
+    because pretty-printed files wrap values in whitespace (``"\\n  required\\n"``), which
+    would otherwise break enum construction such as ``Direction(...)``.
     """
-    if elem is None or elem.text is None:
+    if elem is None:
         return None
-    return elem.text.strip()
+    parts = elem.xpath("text()")
+    if not parts:
+        return None
+    return "".join(parts).strip()
 
 
 def text(elem: Optional[etree._Element], tag: str) -> Optional[str]:
@@ -287,7 +291,7 @@ def parse_file(elem: etree._Element) -> File:
         name=text(elem, "name") or "",
         file_types=[elem_text(t) or "" for t in children(elem, "fileType")],
         is_structural=bool_text(elem, "isStructural", False),
-        is_include_file=is_include is not None and as_bool(is_include.text, False) is True,
+        is_include_file=is_include is not None and as_bool(elem_text(is_include), False) is True,
         include_has_external_declarations=is_include is not None
         and attr_bool(is_include, "externalDeclarations", False),
         logical_name=text(elem, "logicalName"),
@@ -333,7 +337,7 @@ def parse_qualifier(elem: etree._Element) -> Optional[Qualifier]:
         is_data=bool_text(container, "isData"),
         is_clock=bool_text(container, "isClock"),
         is_reset=(
-            LevelFlag(value=as_bool(is_reset_elem.text) or False, level=is_reset_elem.get("level"))
+            LevelFlag(value=as_bool(elem_text(is_reset_elem)) or False, level=is_reset_elem.get("level"))
             if is_reset_elem is not None
             else None
         ),
@@ -341,7 +345,7 @@ def parse_qualifier(elem: etree._Element) -> Optional[Qualifier]:
         is_interrupt=bool_text(container, "isInterrupt"),
         is_clock_en=(
             LevelFlag(
-                value=as_bool(is_clock_en_elem.text) or False,
+                value=as_bool(elem_text(is_clock_en_elem)) or False,
                 level=is_clock_en_elem.get("level"),
                 power_domain_ref=is_clock_en_elem.get("powerDomainRef"),
             )
@@ -350,7 +354,7 @@ def parse_qualifier(elem: etree._Element) -> Optional[Qualifier]:
         ),
         is_power_en=(
             LevelFlag(
-                value=as_bool(is_power_en_elem.text) or False,
+                value=as_bool(elem_text(is_power_en_elem)) or False,
                 level=is_power_en_elem.get("level"),
                 power_domain_ref=is_power_en_elem.get("powerDomainRef"),
             )
@@ -361,7 +365,7 @@ def parse_qualifier(elem: etree._Element) -> Optional[Qualifier]:
         is_protection=bool_text(container, "isProtection"),
         is_flow_control=(
             FlowControlFlag(
-                value=as_bool(is_flow_control_elem.text) or False,
+                value=as_bool(elem_text(is_flow_control_elem)) or False,
                 flow_type=is_flow_control_elem.get("flowType"),
                 user=is_flow_control_elem.get("user"),
             )
@@ -369,7 +373,7 @@ def parse_qualifier(elem: etree._Element) -> Optional[Qualifier]:
             else None
         ),
         is_user=(
-            UserFlag(value=as_bool(is_user_elem.text) or False, user=is_user_elem.get("user"))
+            UserFlag(value=as_bool(elem_text(is_user_elem)) or False, user=is_user_elem.get("user"))
             if is_user_elem is not None
             else None
         ),
