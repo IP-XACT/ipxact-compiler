@@ -42,24 +42,42 @@ def test_data_port_is_optional_with_width():
     assert pwdata.wire.on_initiator.width_all_bits_required is True
 
 
-def test_wire_mode_direction_defaults_to_out():
-    """Regression test: abstractionDefinition.xsd's wirePort group declares
-    <direction> with default="out" when absent, but the parser used to leave
-    it None instead of applying the schema default.
+def test_wire_mode_direction_absent_empty_or_set():
+    """A missing <direction> means the direction is not restricted, so it stays None. The XSD
+    default="out" only applies to an element that is present but empty.
     """
     ns = "http://www.accellera.org/XMLSchema/IPXACT/1685-2022"
-    elem = etree.fromstring(f'<ipxact:onInitiator xmlns:ipxact="{ns}"><ipxact:presence>required</ipxact:presence></ipxact:onInitiator>')
-    assert _parse_wire_mode_constraints(elem).direction == "out"
+    cases = {
+        "": None,
+        "<ipxact:direction/>": "out",
+        "<ipxact:direction>in</ipxact:direction>": "in",
+    }
+    for direction_xml, expected in cases.items():
+        elem = etree.fromstring(
+            f'<ipxact:onInitiator xmlns:ipxact="{ns}">'
+            f"<ipxact:presence>required</ipxact:presence>{direction_xml}"
+            "</ipxact:onInitiator>"
+        )
+        assert _parse_wire_mode_constraints(elem).direction == expected
 
 
-def test_transactional_initiative_defaults_to_requires():
-    """Regression test: abstractionDefinition.xsd's transactionalPort group declares
-    <initiative> with default="requires" when absent, but the parser used to leave
-    it None instead of applying the schema default.
+def test_transactional_initiative_absent_empty_or_set():
+    """A missing <initiative> means the access type is not restricted, so it stays None. The
+    XSD default="requires" only applies to an element that is present but empty.
     """
     ns = "http://www.accellera.org/XMLSchema/IPXACT/1685-2022"
-    elem = etree.fromstring(f'<ipxact:onInitiator xmlns:ipxact="{ns}"><ipxact:presence>required</ipxact:presence></ipxact:onInitiator>')
-    assert _parse_transactional_mode_constraints(elem).initiative == "requires"
+    cases = {
+        "": None,
+        "<ipxact:initiative/>": "requires",
+        "<ipxact:initiative>provides</ipxact:initiative>": "provides",
+    }
+    for initiative_xml, expected in cases.items():
+        elem = etree.fromstring(
+            f'<ipxact:onInitiator xmlns:ipxact="{ns}">'
+            f"<ipxact:presence>required</ipxact:presence>{initiative_xml}"
+            "</ipxact:onInitiator>"
+        )
+        assert _parse_transactional_mode_constraints(elem).initiative == expected
 
 
 def test_pretty_printed_presence_does_not_crash():
