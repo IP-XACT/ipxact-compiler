@@ -48,4 +48,4 @@ version = {attr = "ipxact.__version__"}
 where = ["src"]
 
 [tool.setuptools.package-data]
-ipxact = ["py.typed"]
+ipxact = ["py.typed", "xsd/*/*.xsd", "xsd/*/LICENSE", "xsd/*/README.md"]

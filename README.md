@@ -95,28 +95,53 @@ returns the matching dataclass (`Component`, `Design`, `DesignConfiguration`, `B
 Every schema class (`Component`, `VLNV`, `BusInterface`, `Register`, `Field`, `Expression`, and so
 on) is re-exported at the top level, so `ipxact.<ClassName>` works without reaching into submodules.
 
+### Validation
+
+Parsing does not validate by default. The IEEE 1685-2022 XSD files are shipped with the package, so
+validation works offline:
+
+```python
+issues = ipxact.validate("path/to/some_component.xml")   # [] when valid
+for issue in issues:
+    print(issue.line, issue.message)
+
+component = ipxact.parse_file("path/to/some_component.xml", validate=True)
+# raises ipxact.ValidationError (with .issues) if the file is not valid
+```
+
+`ipxact.validate()` also accepts an lxml tree or element, so tools that write IP-XACT can validate
+their output before saving it. `ipxact.xsd_path()` gives the folder holding the XSD files
+(`index.xsd` is the entry point) for tools that need the files themselves.
+
+XSD validation checks the structure, types and values of a document, and the uniqueness and reference
+rules the schema defines (for example, two parameters with the same `parameterId`). It does not check
+the Semantic Consistency Rules of the standard.
+
 ## Design principles
 
 - **Single-file parsing only.** `ipxact-compiler` never opens a second file on its own. Resolving
   VLNV references across a library of files (for example, finding the `Component` that a `Design`'s
   instance refers to) is left to the caller.
-- **Input files are assumed to be valid.** `ipxact-compiler` does not perform validation; it assumes
-  the IP-XACT documents you give it are already well-formed and conform to the standard. This is why
-  the parser currently favors defaulting over raising on missing or malformed data. This may change
-  (see "Known limitations").
-- **Hand-written, not XSD auto-generated.** The object model is a set of hand-written Python
-  dataclasses following the schema but not automatically generated from the XSD. This keeps the API
-  stable, at the cost of needing to keep it manually in sync with the standard.
+- **Input files are assumed to be valid.** Unless you ask for validation, the parser assumes the
+  IP-XACT documents you give it are well-formed and conform to the standard. This is why it favors
+  defaulting over raising on missing or malformed data. Use `validate=True` or `ipxact.validate()`
+  when the input may not be valid.
+- **The XSD files are shipped, not downloaded.** We decided to ship a copy of the official
+  Accellera files instead of downloading them when needed:
+  - Validation works offline, including in CI.
+  - Validation results only change when we decide to update. The published 1685-2022 files can be
+    updated at the same URL (two of the current files were last changed in September 2024, the others in July 2023); with a copy,
+    taking such an update is a deliberate change, tested like any other.
+  - The website only serves the files over plain HTTP.
+
+  The online URL (for example in `xsi:schemaLocation`) is only a hint of where to find the schema.
+  The schema itself is identified by its namespace, so a local copy is the same schema. To update the
+  copy, replace the files (see `src/ipxact/xsd/1685-2022/README.md`).
 
 ## Known limitations / ideas for later
 
 These are open items, not commitments.
 
-- **No XSD schema validation.** Malformed IP-XACT (missing required elements, wrong types, invalid
-  structure) is not rejected at parse time; the parser will generally just default missing fields
-  rather than erroring. A validation path using the IEEE 1685-2022 XSDs and `lxml.etree.XMLSchema`
-  is being considered. Shipping the XSD files with this library would also let tools built on it
-  validate their own output.
 - **No deliberate error-handling philosophy yet.** Right now, malformed input either silently
   produces a default value or raises whatever low-level Python exception happens to occur (a
   `ValueError`, an `AttributeError`, etc.) rather than a clear, intentional error type. Deciding on
@@ -131,3 +156,6 @@ These are open items, not commitments.
 ## License
 
 LGPL-3.0. See [`LICENSE`](LICENSE).
+
+The IEEE 1685-2022 XSD files in `src/ipxact/xsd/1685-2022/` are Accellera's, unmodified, under the
+Apache License 2.0 (see the `LICENSE` file in that folder).
