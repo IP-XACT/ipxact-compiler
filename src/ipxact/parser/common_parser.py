@@ -86,6 +86,9 @@ def elem_text(elem: Optional[etree._Element]) -> Optional[str]:
     """
     if elem is None:
         return None
+    if len(elem) == 0:  # only text, no child nodes
+        return elem.text.strip() if elem.text is not None else None
+    # With child nodes (Comments, PI, etc)
     parts = elem.xpath("text()")
     if not parts:
         return None
